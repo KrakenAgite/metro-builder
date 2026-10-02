@@ -127,6 +127,11 @@ MapView::MapView(Metro *metro, QWidget *parent)
             rebuildOverlay();
         if (m_schematic)
             rebuildSchematic();
+        ++m_netRev;
+        update();
+    });
+    connect(m_metro, &Metro::eventsChanged, this, [this] {
+        ++m_netRev; // lignes perturbées, stations fermées
         update();
     });
 }
@@ -155,6 +160,109 @@ void MapView::setExtendBusy(bool busy)
 {
     m_extendBusy = busy;
     update();
+}
+
+void MapView::drawBase(QPainter &p)
+{
+    if (!m_static.isNull() && qFuzzyCompare(m_scale, m_staticScale)) {
+        // simple translation : copie directe, bien plus rapide qu'un dessin transformé
+        p.drawPixmap((m_offset - m_staticOffset).toPoint(), m_static);
+    } else if (!m_static.isNull()) {
+        p.save();
+        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        p.translate(m_offset);
+        p.scale(m_scale / m_staticScale, m_scale / m_staticScale);
+        p.translate(-m_staticOffset);
+        p.drawPixmap(0, 0, m_static);
+        p.restore();
+    }
+
+    if (!m_layer.image().isNull()) {
+        p.save();
+        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.translate(m_offset);
+        p.scale(m_scale, m_scale);
+        p.setClipRect(m_layer.worldRect()); // le calque s'arrête à la zone de jeu
+        if (m_layer.kind() == DensityLayer::Demand) {
+            p.setOpacity(m_style->overlayOpacity);
+            p.setCompositionMode(m_style->overlayMode);
+        }
+        p.drawImage(m_layer.worldRect(), m_layer.image());
+        p.setOpacity(1);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        // courbes de niveau : nettes quel que soit le zoom
+        const auto &contours = m_layer.contours();
+        for (int i = 0; i < (m_quality == 0 ? 0 : contours.size()); ++i) { // économie : sans courbes de niveau
+            QColor c = m_layer.bandColor(i + 1);
+            c = darkMap() ? c.lighter(115) : c.darker(125);
+            QPen pen(c, i == contours.size() - 1 ? 2.2 : 1.4);
+            pen.setCosmetic(true);
+            p.setPen(pen);
+            p.setBrush(Qt::NoBrush);
+            p.drawPath(contours[i]);
+        }
+        p.restore();
+    }
+
+}
+
+QString MapView::viewKey() const
+{
+    return QStringLiteral("%1,%2,%3,%4x%5,%6")
+        .arg(m_offset.x(), 0, 'f', 2)
+        .arg(m_offset.y(), 0, 'f', 2)
+        .arg(m_scale, 0, 'g', 10)
+        .arg(width())
+        .arg(height())
+        .arg(devicePixelRatioF());
+}
+
+// Vrai si le cache correspond déjà à « want » ; sinon le prépare (transparent) pour être redessiné
+bool MapView::cacheValid(QPixmap &cache, QString &key, const QString &want)
+{
+    if (key == want && !cache.isNull())
+        return true;
+    const qreal dpr = devicePixelRatioF();
+    if (cache.size() != size() * dpr) {
+        cache = QPixmap(size() * dpr);
+        cache.setDevicePixelRatio(dpr);
+    }
+    cache.fill(Qt::transparent);
+    key = want;
+    return false;
+}
+
+void MapView::setQuality(int quality)
+{
+    m_quality = std::clamp(quality, 0, 2);
+    renderStatic();
+    update();
+}
+
+void MapView::setShowPerf(bool on)
+{
+    m_showPerf = on;
+    m_fpsClock.start();
+    m_fpsFrames = 0;
+    update();
+}
+
+// Indicateur de performances : images par seconde et temps de dessin de la carte
+void MapView::drawPerf(QPainter &p)
+{
+    const QString text = tr("%1 img/s · dessin %2 ms").arg(qRound(m_fps)).arg(m_paintMs, 0, 'f', 1);
+    QFont f = font();
+    f.setPointSizeF(f.pointSizeF() * 0.9);
+    p.setFont(f);
+    const QFontMetrics fm(f);
+    // en bas à droite, au-dessus de la légende du calque
+    const QRectF box(width() - fm.horizontalAdvance(text) - 36, height() - m_insetBottom - 16 - 84 - 34,
+                     fm.horizontalAdvance(text) + 20, 24);
+    drawPanel(p, box, 8);
+    p.setPen(m_paintMs > 25 ? QColor("#F5A524") : QColor("#9AA0A6"));
+    p.drawText(box, Qt::AlignCenter, text);
+    p.setFont(font());
 }
 
 void MapView::setDayNight(bool on)
@@ -192,8 +300,25 @@ void MapView::drawNight(QPainter &p, double dark)
     const QColor tint(mix(255, dusk.red(), dark), mix(255, dusk.green(), dark), mix(255, dusk.blue(), dark));
     p.setCompositionMode(QPainter::CompositionMode_Multiply);
     p.fillRect(rect(), tint);
-    // lumières : addition (elles éclairent le fond sombre)
+    // lumières : addition (elles éclairent le fond sombre), dessinées une fois par vue puis réutilisées
+    if (m_quality == 0) { // économie : nuit sans lumières
+        p.restore();
+        return;
+    }
+    if (!cacheValid(m_lightsCache, m_lightsKey, viewKey() + QStringLiteral("|%1|%2").arg(m_netRev).arg(m_quality))) {
+        QPainter lp(&m_lightsCache);
+        lp.setRenderHint(QPainter::Antialiasing, true);
+        drawLights(lp);
+    }
     p.setCompositionMode(QPainter::CompositionMode_Plus);
+    p.setOpacity(dark);
+    p.drawPixmap(0, 0, m_lightsCache);
+    p.restore();
+}
+
+void MapView::drawLights(QPainter &p)
+{
+    const double dark = 1;
     const QRectF view = QRectF(rect()).adjusted(-10, -10, 10, 10);
     if (m_scale > 0.04) {
         const double size = std::clamp(m_scale * 9, 1.4, 3.2);
@@ -201,8 +326,9 @@ void MapView::drawNight(QPainter &p, double dark)
         p.setPen(pen);
         QVector<QPointF> pts;
         pts.reserve(m_lights.size());
-        for (const QPointF &w : m_lights) {
-            const QPointF s = toScreen(w);
+        const int step = m_quality == 2 ? 1 : 2; // équilibrée : une fenêtre sur deux
+        for (int i = 0; i < m_lights.size(); i += step) {
+            const QPointF s = toScreen(m_lights[i]);
             if (view.contains(s))
                 pts << s;
         }
@@ -223,7 +349,6 @@ void MapView::drawNight(QPainter &p, double dark)
         p.setBrush(g);
         p.drawEllipse(c, r, r);
     }
-    p.restore();
 }
 
 void MapView::setTool(Tool tool)
@@ -494,7 +619,10 @@ void MapView::renderStatic()
     m_staticOffset = m_offset;
 
     QPainter p(&m_static);
-    p.setRenderHint(QPainter::Antialiasing, true);
+    const bool eco = m_quality == 0;
+    // tailles minimales (pixels) en dessous desquelles un bâtiment n'est pas dessiné
+    const double minBuilding = m_quality == 2 ? 0.8 : m_quality == 1 ? 1.5 : 3.0;
+    p.setRenderHint(QPainter::Antialiasing, !eco);
     p.translate(m_offset);
     p.scale(m_scale, m_scale);
     const double px = 1.0 / m_scale; // 1 pixel écran en mètres
@@ -527,7 +655,9 @@ void MapView::renderStatic()
     // rues : bordure puis remplissage, des plus petites aux plus grandes
     for (int pass = 0; pass < 2; ++pass) {
         for (int k = 5; k >= 0; --k) {
-            if (k == int(RoadKind::Service) && m_scale < 0.25)
+            if (k == int(RoadKind::Service) && m_scale < (eco ? 0.5 : 0.25))
+                continue;
+            if (eco && k == int(RoadKind::Residential) && m_scale < 0.1) // économie : petites rues masquées de loin
                 continue;
             const double w = std::max(kRoadWidth[k], kRoadMinPx[k] * px);
             if (pass == 0)
@@ -548,13 +678,15 @@ void MapView::renderStatic()
         veil(dark ? 150 : 150);
 
     p.setPen(m_scale > 0.6 ? QPen(m_style->buildingOutline, 0) : Qt::NoPen);
-    p.setRenderHint(QPainter::Antialiasing, m_scale > 0.3);
-    if (m_layer.isDensity()) {
+    p.setRenderHint(QPainter::Antialiasing, !eco && m_scale > 0.3);
+    const bool drawBuildings = !(eco && m_scale < 0.12); // économie : pas de bâtiments quand on voit toute la ville
+    if (!drawBuildings) {
+    } else if (m_layer.isDensity()) {
         // chaque bâtiment prend la couleur du palier de densité de son quartier
         const QColor muted = dark ? QColor("#2A2E36") : QColor("#E4E1DC");
         for (const auto &group : m_buildings)
             for (const Shape &s : group) {
-                if (!s.box.intersects(view) || std::max(s.box.width(), s.box.height()) * m_scale < 0.8)
+                if (!s.box.intersects(view) || std::max(s.box.width(), s.box.height()) * m_scale < minBuilding)
                     continue;
                 const int band = m_layer.bandAt(s.box.center());
                 p.setBrush(band > 0 ? m_layer.bandColor(band) : muted);
@@ -563,14 +695,14 @@ void MapView::renderStatic()
     } else {
         for (int k = 0; k < 6; ++k) {
             p.setBrush(m_style->buildings[k]);
-            fill(m_buildings[k], 0.8);
+            fill(m_buildings[k], minBuilding);
         }
         if (m_overlay == Demand)
             veil(dark ? 90 : 110);
         else if (m_overlay == Load)
             veil(dark ? 70 : 90);
     }
-    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::Antialiasing, !eco);
 
     // emprise de jeu
     p.setBrush(Qt::NoBrush);
@@ -589,6 +721,7 @@ void MapView::rebuildOverlay()
     default: break;
     }
     m_layer.build(kind, m_metro->grid());
+    ++m_layerRev;
 }
 
 int MapView::stationUnder(const QPointF &screen) const
@@ -615,6 +748,8 @@ int MapView::stationUnder(const QPointF &screen) const
 
 void MapView::paintEvent(QPaintEvent *)
 {
+    QElapsedTimer paintClock;
+    paintClock.start();
     QPainter p(this);
     p.fillRect(rect(), m_style->background);
     if (!m_city) {
@@ -652,50 +787,29 @@ void MapView::paintEvent(QPaintEvent *)
         return;
     }
     if (m_schematic) {
+        // partie fixe du plan (tracés, stations, noms placés sans chevauchement) en cache, rames par-dessus
+        if (!cacheValid(m_schemCache, m_schemKey,
+                        viewKey() + QStringLiteral("|%1|%2|%3|%4").arg(m_netRev).arg(m_hover).arg(m_selected).arg(quintptr(m_style)))) {
+            QPainter sp(&m_schemCache);
+            sp.setFont(font());
+            m_schemLayer = 1;
+            paintSchematic(sp);
+        }
+        p.drawPixmap(0, 0, m_schemCache);
+        m_schemLayer = 2;
         paintSchematic(p);
+        m_schemLayer = 0;
         return;
     }
 
-    if (!m_static.isNull() && qFuzzyCompare(m_scale, m_staticScale)) {
-        // simple translation : copie directe, bien plus rapide qu'un dessin transformé
-        p.drawPixmap((m_offset - m_staticOffset).toPoint(), m_static);
-    } else if (!m_static.isNull()) {
-        p.save();
-        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        p.translate(m_offset);
-        p.scale(m_scale / m_staticScale, m_scale / m_staticScale);
-        p.translate(-m_staticOffset);
-        p.drawPixmap(0, 0, m_static);
-        p.restore();
+    // fond (carte + calque) : en cache tant que la vue et le calque ne changent pas
+    if (!cacheValid(m_baseCache, m_baseKey,
+                    viewKey() + QStringLiteral("|%1|%2|%3|%4").arg(m_static.cacheKey()).arg(m_layerRev).arg(quintptr(m_style)).arg(m_quality))) {
+        QPainter bp(&m_baseCache);
+        bp.fillRect(rect(), m_style->background);
+        drawBase(bp);
     }
-
-    if (!m_layer.image().isNull()) {
-        p.save();
-        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        p.setRenderHint(QPainter::Antialiasing, true);
-        p.translate(m_offset);
-        p.scale(m_scale, m_scale);
-        p.setClipRect(m_layer.worldRect()); // le calque s'arrête à la zone de jeu
-        if (m_layer.kind() == DensityLayer::Demand) {
-            p.setOpacity(m_style->overlayOpacity);
-            p.setCompositionMode(m_style->overlayMode);
-        }
-        p.drawImage(m_layer.worldRect(), m_layer.image());
-        p.setOpacity(1);
-        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        // courbes de niveau : nettes quel que soit le zoom
-        const auto &contours = m_layer.contours();
-        for (int i = 0; i < contours.size(); ++i) {
-            QColor c = m_layer.bandColor(i + 1);
-            c = darkMap() ? c.lighter(115) : c.darker(125);
-            QPen pen(c, i == contours.size() - 1 ? 2.2 : 1.4);
-            pen.setCosmetic(true);
-            p.setPen(pen);
-            p.setBrush(Qt::NoBrush);
-            p.drawPath(contours[i]);
-        }
-        p.restore();
-    }
+    p.drawPixmap(0, 0, m_baseCache);
 
     p.setRenderHint(QPainter::Antialiasing, true);
 
@@ -718,16 +832,43 @@ void MapView::paintEvent(QPaintEvent *)
         if (const Station *s = m_metro->station(id))
             catchment(s->pos, m_style->catchSelect);
 
-    drawLines(p);
+    // réseau (tracés + stations) : en cache tant que vue, réseau, survol et sélection ne changent pas
+    if (!cacheValid(m_netCache, m_netKey,
+                    viewKey() + QStringLiteral("|%1|%2|%3|%4|%5|%6|%7")
+                                    .arg(m_netRev)
+                                    .arg(m_hover)
+                                    .arg(m_selected)
+                                    .arg(m_currentLine)
+                                    .arg(int(m_tool))
+                                    .arg(int(m_overlay))
+                                    .arg(quintptr(m_style)))) {
+        QPainter np(&m_netCache);
+        np.setRenderHint(QPainter::Antialiasing, true);
+        np.setFont(font());
+        drawLines(np);
+        drawStations(np);
+    }
+    p.drawPixmap(0, 0, m_netCache);
+    drawBuildPreview(p);
     drawWaypoints(p);
-    drawStations(p);
     drawEvents(p);
-    drawTrains(p); // au-dessus des stations : une rame à quai reste visible
+    // rames : inutiles à voir quand la carte est très dézoomée (de simples points de quelques pixels)
+    if (m_scale >= (m_quality == 0 ? 0.2 : 0.1))
+        drawTrains(p); // au-dessus des stations : une rame à quai reste visible
     drawRoute(p);
     drawProbe(p);
     drawExtendButtons(p);
     drawHud(p);
     drawLegend(p);
+    if (m_showPerf) {
+        m_paintMs = m_paintMs * 0.8 + paintClock.nsecsElapsed() / 1e6 * 0.2;
+        ++m_fpsFrames;
+        if (m_fpsClock.elapsed() >= 1000) {
+            m_fps = m_fpsFrames * 1000.0 / m_fpsClock.restart();
+            m_fpsFrames = 0;
+        }
+        drawPerf(p);
+    }
 }
 
 namespace {
@@ -840,7 +981,11 @@ void MapView::drawLines(QPainter &p)
         }
     }
 
-    // Aperçu du prochain tronçon en mode tracé
+}
+
+// Aperçu du prochain tronçon en mode tracé
+void MapView::drawBuildPreview(QPainter &p)
+{
     if (m_tool == BuildLine && m_mouseIn) {
         if (const Line *l = m_metro->line(m_currentLine); l && !l->stops.isEmpty()) {
             const bool front = QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
@@ -962,13 +1107,24 @@ void MapView::drawTrains(QPainter &p)
         const QPointF c = toScreen(t.wagonPos[t.wagonPos.size() / 2]);
         if (!view.contains(c))
             continue;
-        // anneau blanc cerné de sombre : visible sur sa propre ligne comme sur n'importe quel fond
-        p.setPen(QPen(QColor(0, 0, 0, 150), 1.2));
-        p.setBrush(Qt::white);
-        p.drawEllipse(c, 7.5, 7.5);
-        p.setPen(Qt::NoPen);
-        p.setBrush(t.color);
-        p.drawEllipse(c, 4.8, 4.8);
+        // anneau blanc cerné de sombre (visible sur sa propre ligne comme sur n'importe quel fond),
+        // dessiné une fois par couleur puis simplement recopié
+        QPixmap &sprite = m_trainSprites[t.color.rgb()];
+        const qreal dpr = devicePixelRatioF();
+        if (sprite.isNull() || !qFuzzyCompare(sprite.devicePixelRatio(), dpr)) {
+            sprite = QPixmap(QSize(18, 18) * dpr);
+            sprite.setDevicePixelRatio(dpr);
+            sprite.fill(Qt::transparent);
+            QPainter sp(&sprite);
+            sp.setRenderHint(QPainter::Antialiasing, true);
+            sp.setPen(QPen(QColor(0, 0, 0, 150), 1.2));
+            sp.setBrush(Qt::white);
+            sp.drawEllipse(QPointF(9, 9), 7.5, 7.5);
+            sp.setPen(Qt::NoPen);
+            sp.setBrush(t.color);
+            sp.drawEllipse(QPointF(9, 9), 4.8, 4.8);
+        }
+        p.drawPixmap(c - QPointF(9, 9), sprite);
     }
 }
 
@@ -1275,15 +1431,17 @@ void MapView::paintSchematic(QPainter &p)
     const bool dark = darkMap();
     const QColor paper = dark ? QColor("#12151B") : QColor("#F7F5F0");
     const QColor ink = dark ? QColor("#E8EAED") : QColor("#1B1D22");
-    p.fillRect(QRectF(0, 0, vw(), vh()), paper);
+    const bool fixedPart = m_schemLayer != 2, movingPart = m_schemLayer != 1;
     p.setRenderHint(QPainter::Antialiasing, true);
-
-    // trame de points discrète
-    p.setPen(Qt::NoPen);
-    p.setBrush(dark ? QColor(255, 255, 255, 14) : QColor(0, 0, 0, 16));
-    for (int x = 20; x < vw(); x += 32)
-        for (int y = 20; y < vh(); y += 32)
-            p.drawEllipse(QPointF(x, y), 1.1, 1.1);
+    if (fixedPart) {
+        p.fillRect(QRectF(0, 0, vw(), vh()), paper);
+        // trame de points discrète
+        p.setPen(Qt::NoPen);
+        p.setBrush(dark ? QColor(255, 255, 255, 14) : QColor(0, 0, 0, 16));
+        for (int x = 20; x < vw(); x += 32)
+            for (int y = 20; y < vh(); y += 32)
+                p.drawEllipse(QPointF(x, y), 1.1, 1.1);
+    }
 
     const auto &lines = m_metro->lines();
     auto pos = [&](int id) { return toScreen(m_schem.value(id)); };
@@ -1305,7 +1463,7 @@ void MapView::paintSchematic(QPainter &p)
         return pts;
     };
 
-    for (int pass = 0; pass < 2; ++pass)
+    for (int pass = 0; pass < (fixedPart ? 2 : 0); ++pass)
         for (const Line &l : lines)
             for (int k = 0; k < l.segmentCount(); ++k) {
                 if (pass == 0)
@@ -1316,6 +1474,7 @@ void MapView::paintSchematic(QPainter &p)
                 p.drawPolyline(segmentPath(l, k));
             }
 
+    if (fixedPart) {
     // tronçons écran : obstacles pour le placement des noms
     QVector<QLineF> obstacles;
     for (const Line &l : lines)
@@ -1420,6 +1579,7 @@ void MapView::paintSchematic(QPainter &p)
         }
     }
 
+    }
     if (m_exporting) { // plan exporté : titre, sans rames ni bulle d'aide
         QFont tf = font();
         tf.setBold(true);
@@ -1436,6 +1596,8 @@ void MapView::paintSchematic(QPainter &p)
         drawSchematicLegend(p);
         return;
     }
+    if (!movingPart)
+        return;
     // rames : un point qui glisse sur le tronçon schématique
     for (const TrainVis &t : m_metro->trains(0)) {
         const Line *l = m_metro->line(t.lineId);
@@ -1553,6 +1715,8 @@ void MapView::mouseMoveEvent(QMouseEvent *e)
         if (!m_dragging && (pos - m_pressPos).manhattanLength() > 4)
             m_dragging = true;
         if (m_dragging) {
+            if (m_dragStation >= 0 || m_dragWaypoint.valid() || m_pendingTrack.valid())
+                ++m_netRev; // le tracé bouge pendant le glisser
             if (m_dragStation >= 0) {
                 m_metro->moveStation(m_dragStation, toWorld(pos), false);
             } else if (m_pendingTrack.valid()) {

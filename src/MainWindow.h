@@ -238,6 +238,10 @@ private:
     QHBoxLayout *m_endButtons;
     QLabel *m_goalsSection;
     bool m_hadDebt = false;
+    int m_frameInterval = 33;       // ms entre deux images (limite d'images par seconde)
+    bool m_bgPause = false;         // pause automatique quand la fenêtre passe en arrière-plan
+    int m_speedBeforeBackground = -1;
+    bool m_mutedForBackground = false;
 
     // score et objectifs
     Card *m_goalsCard;

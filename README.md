@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.6.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.7.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -159,6 +159,18 @@ L'interface est une carte plein écran avec des panneaux flottants :
   pour changer de langue, la partie est sauvegardée automatiquement. Les textes sont dans
   `translations/metrobuilder_en.ts` (à recompiler avec `lrelease translations/metrobuilder_en.ts`), le fichier
   `.qm` est intégré à l'exécutable.
+
+**Performances** (☰ → Performances)
+- **Qualité graphique** : Maximale, Équilibrée (une fenêtre sur deux la nuit, petits bâtiments omis) ou
+  Économie (carte sans anticrénelage, petites rues et bâtiments masqués de loin, pas de courbes de niveau ni de
+  lumières la nuit, rames masquées plus tôt au dézoom).
+- **Images par seconde** : 15, 30 (défaut) ou 60.
+- **Pause en arrière-plan** (option) : le jeu se met en pause et se tait quand on passe sur une autre application.
+- **Afficher les performances** : images/s et temps de dessin de la carte.
+- Sans réglage : la carte n'est redessinée que si quelque chose bouge (rien en pause, sauf les marqueurs
+  d'événements), plus du tout fenêtre réduite ; fond, réseau et lumières sont gardés en cache et seules les rames
+  sont redessinées à chaque image ; les rames disparaissent quand on dézoome fortement ; la musique utilise un
+  sinus tabulé et ne calcule rien quand elle est coupée.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

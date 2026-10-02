@@ -1723,6 +1723,42 @@ The current network is replaced; imported stations and lines are free.</translat
         <source>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Sélection · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Tracer · &lt;b&gt;4&lt;/b&gt; Démolir · &lt;b&gt;5&lt;/b&gt; Itinéraire&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; annuler / rétablir (la construction annulée est remboursée) · &lt;b&gt;Ctrl+E&lt;/b&gt; exporter le plan&lt;br&gt;&lt;b&gt;N&lt;/b&gt; nouvelle ligne numérotée · &lt;b&gt;Maj+N&lt;/b&gt; ligne lettre · &lt;b&gt;Espace&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recadrer · &lt;b&gt;M&lt;/b&gt; plan schématique · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectifs · &lt;b&gt;Échap&lt;/b&gt; fermer&lt;br&gt;&lt;b&gt;Suppr&lt;/b&gt; démolir la station sélectionnée · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; partie&lt;/p&gt;&lt;p&gt;En mode tracé : clic = ajouter en bout de ligne, Ctrl+clic = en tête, clic droit = retirer l'arrêt. Réordonnez les arrêts par glisser-déposer dans le panneau de la ligne.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Points de passage&lt;/b&gt; : glissez un tracé (outil Sélection ou Tracer) pour le courber, glissez une poignée blanche pour la déplacer, clic droit dessus pour la supprimer. Le tunnel supplémentaire est facturé au kilomètre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Événements&lt;/b&gt; : grèves, pannes, inondations, subventions, nouveaux quartiers… Ceux qui demandent une décision mettent le jeu en pause.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score et objectifs&lt;/b&gt; : chaque mois rapporte des points (voyageurs, demande captée, rentabilité) ; chaque objectif atteint donne des points et une prime, puis laisse place à un plus difficile. Le meilleur score de chaque ville est conservé.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Itinéraire&lt;/b&gt; (5) : cliquez un départ puis une arrivée pour voir le meilleur trajet (marche, attente, métro, correspondances) et le comparer à la marche.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Bac à sable&lt;/b&gt; : choisissez-le sur l'écran d'accueil (ou ☰ pour la partie en cours) : construction gratuite, sans événements ni score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Gestion&lt;/b&gt; (Finances, B) : prix du ticket, niveau d'entretien, emprunts ; la ville subventionne un métro qui capte bien la demande. Dans chaque ligne : rames aux heures creuses, âge du matériel et renouvellement. Les quartiers bien desservis se densifient au fil des ans.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Défis&lt;/b&gt; : scénarios sur six grandes villes (accueil ou ☰), import du métro réel (☰), et succès à débloquer.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Ambiance&lt;/b&gt; : la journée défile (1 s = 1 min à ×1) ; la nuit la carte s'assombrit, le métro ferme de 1 h à 5 h et circule moins aux heures creuses. Dans la fiche d'une ligne, « Vue en coupe » montre tunnels, viaducs et passages sous les fleuves ; cliquez un tronçon pour basculer tunnel / viaduc.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Agrandir la carte&lt;/b&gt; : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.&lt;/p&gt;&lt;p&gt;Calque &lt;b&gt;demande&lt;/b&gt; : rouge = déplacements non desservis, vert = captés par le métro.&lt;/p&gt;&lt;p style='color:#9AA0A6'&gt;Données © contributeurs OpenStreetMap (ODbL) · tuiles © OpenMapTiles, servies par OpenFreeMap.&lt;/p&gt;</source>
         <translation>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Select · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Lay out · &lt;b&gt;4&lt;/b&gt; Demolish · &lt;b&gt;5&lt;/b&gt; Route&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; undo / redo (undone construction is refunded) · &lt;b&gt;Ctrl+E&lt;/b&gt; export the map&lt;br&gt;&lt;b&gt;N&lt;/b&gt; new numbered line · &lt;b&gt;Shift+N&lt;/b&gt; lettered line · &lt;b&gt;Space&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recenter · &lt;b&gt;M&lt;/b&gt; schematic map · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectives · &lt;b&gt;Esc&lt;/b&gt; close&lt;br&gt;&lt;b&gt;Del&lt;/b&gt; demolish the selected station · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; game&lt;/p&gt;&lt;p&gt;In lay-out mode: click = add at the end of the line, Ctrl+click = at the start, right click = remove the stop. Reorder stops by drag and drop in the line panel.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Waypoints&lt;/b&gt;: drag a track (Select or Lay out tool) to curve it, drag a white handle to move it, right-click it to delete it. The extra tunnel is charged per kilometre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Events&lt;/b&gt;: strikes, breakdowns, floods, subsidies, new neighbourhoods… Those that need a decision pause the game.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score and objectives&lt;/b&gt;: every month earns points (passengers, captured demand, profitability); each objective reached gives points and a bonus, then makes way for a harder one. Each city's best score is kept.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Route&lt;/b&gt; (5): click a start then a destination to see the best trip (walking, waiting, metro, transfers) compared with walking.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Sandbox&lt;/b&gt;: choose it on the home screen (or ☰ for the current game): free construction, no events or score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Management&lt;/b&gt; (Finances, B): ticket price, maintenance level, loans; the city subsidises a metro that captures demand well. In each line: off-peak trains, rolling stock age and renewal. Well-served neighbourhoods grow denser over the years.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Challenges&lt;/b&gt;: scenarios in six great cities (home screen or ☰), real metro import (☰), and achievements to unlock.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Atmosphere&lt;/b&gt;: the day goes by (1 s = 1 min at ×1); at night the map darkens, the metro closes from 1 am to 5 am and runs less off-peak. In a line's panel, « Cross-section » shows tunnels, viaducts and river crossings; click a section to switch tunnel / viaduct.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Enlarge the map&lt;/b&gt;: « 1 km » buttons on the edges of the play area, or the ☰ menu.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Demand&lt;/b&gt; layer: red = unserved trips, green = captured by the metro.&lt;/p&gt;&lt;p style='color:#9AA0A6'&gt;Data © OpenStreetMap contributors (ODbL) · tiles © OpenMapTiles, served by OpenFreeMap.&lt;/p&gt;</translation>
     </message>
+    <message>
+        <source>Performances</source>
+        <translation>Performance</translation>
+    </message>
+    <message>
+        <source>Qualité graphique</source>
+        <translation>Graphics quality</translation>
+    </message>
+    <message>
+        <source>Économie (carte simplifiée, nuit sans lumières)</source>
+        <translation>Economy (simplified map, no lights at night)</translation>
+    </message>
+    <message>
+        <source>Équilibrée</source>
+        <translation>Balanced</translation>
+    </message>
+    <message>
+        <source>Maximale</source>
+        <translation>Maximum</translation>
+    </message>
+    <message>
+        <source>Images par seconde</source>
+        <translation>Frames per second</translation>
+    </message>
+    <message>
+        <source>%1 images/s</source>
+        <translation>%1 frames/s</translation>
+    </message>
+    <message>
+        <source>Pause quand la fenêtre est en arrière-plan</source>
+        <translation>Pause when the window is in the background</translation>
+    </message>
+    <message>
+        <source>Afficher les performances</source>
+        <translation>Show performance</translation>
+    </message>
 </context>
 <context>
     <name>MapView</name>
@@ -1833,6 +1869,10 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Sélectionnez ou créez une ligne avant de tracer.</source>
         <translation>Select or create a line before laying out.</translation>
+    </message>
+    <message>
+        <source>%1 img/s · dessin %2 ms</source>
+        <translation>%1 fps · draw %2 ms</translation>
     </message>
 </context>
 <context>

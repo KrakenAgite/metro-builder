@@ -18,6 +18,21 @@ namespace {
 constexpr int Rate = 44100;
 constexpr double Tau = 6.283185307179586;
 
+// sinus tabulé (4096 points, interpolation linéaire) : bien plus rapide que std::sin, inaudible ici
+// x est une phase en tours (1 = 2π), positive
+double sin01(double x)
+{
+    static const std::vector<float> table = [] {
+        std::vector<float> t(4097);
+        for (int i = 0; i <= 4096; ++i)
+            t[i] = float(std::sin(Tau * i / 4096.0));
+        return t;
+    }();
+    const double f = (x - std::floor(x)) * 4096;
+    const int i = int(f);
+    return table[i] + (table[i + 1] - table[i]) * (f - i);
+}
+
 double midiToHz(double m)
 {
     return 440.0 * std::pow(2.0, (m - 69) / 12.0);
@@ -98,18 +113,22 @@ public:
             const double mix = m_padMix * m_padMix * (3 - 2 * m_padMix); // fondu adouci
             m_breath += 0.07 / Rate; // respiration lente (~14 s)
             m_breath -= std::floor(m_breath);
-            const double swell = 0.8 + 0.2 * std::sin(Tau * m_breath);
+            const double swell = 0.8 + 0.2 * sin01(m_breath);
+            const bool fading = mix < 1; // l'accord précédent n'est calculé que pendant le fondu
             for (int v = 0; v < 4; ++v) {
                 for (int side = 0; side < 2; ++side) {
                     const double det = side ? 1.0012 : 0.9988;
                     double &ph = m_padPhase[v][side];
                     ph += m_padFreq[v] * det / Rate;
                     ph -= std::floor(ph);
-                    double &pph = m_prevPhase[v][side];
-                    pph += m_prevFreq[v] * det / Rate;
-                    pph -= std::floor(pph);
-                    auto voice = [](double x) { return 0.75 * std::sin(Tau * x) + 0.25 * (4 * std::abs(x - 0.5) - 1); };
-                    const double sv = voice(ph) * mix + voice(pph) * (1 - mix);
+                    auto voice = [](double x) { return 0.75 * sin01(x) + 0.25 * (4 * std::abs(x - 0.5) - 1); };
+                    double sv = voice(ph);
+                    if (fading) {
+                        double &pph = m_prevPhase[v][side];
+                        pph += m_prevFreq[v] * det / Rate;
+                        pph -= std::floor(pph);
+                        sv = sv * mix + voice(pph) * (1 - mix);
+                    }
                     (side ? r : l) += sv * 0.04 * swell;
                 }
             }
@@ -124,7 +143,7 @@ public:
             m_bassPhase -= std::floor(m_bassPhase);
             m_bassEnv += (m_bassTarget - m_bassEnv) * (1.0 / (Rate * 1.2));
             m_bassTarget *= 0.999993;
-            const double bass = std::sin(Tau * m_bassPhase) * m_bassEnv * 0.09;
+            const double bass = sin01(m_bassPhase) * m_bassEnv * 0.09;
             l += bass;
             r += bass;
 
@@ -134,7 +153,7 @@ public:
                 n.phase += n.freq / Rate;
                 n.rise = std::min(1.0, n.rise + 1.0 / (Rate * 0.025));
                 n.amp *= n.decay;
-                const double s = (std::sin(Tau * n.phase) + 0.12 * std::sin(2 * Tau * n.phase)) * n.amp * n.rise;
+                const double s = (sin01(n.phase) + 0.12 * sin01(2 * n.phase)) * n.amp * n.rise;
                 al += s * (1 - n.pan);
                 ar += s * n.pan;
             }
@@ -316,12 +335,16 @@ void Audio::run()
         std::fill(buf, buf + frames * 2, 0.f);
         // musique (toujours calculée pour garder son fil ; mixée selon le volume)
         const double target = (m_musicOn && !m_muted) ? m_musicVolume.load() : 0.0;
-        mus.assign(size_t(frames) * 2, 0.f);
-        music.render(mus.data(), frames);
-        for (int i = 0; i < frames; ++i) {
-            musicGain += (target - musicGain) * 0.0005;
-            buf[i * 2] += float(mus[i * 2] * musicGain);
-            buf[i * 2 + 1] += float(mus[i * 2 + 1] * musicGain);
+        if (target > 0 || musicGain > 1e-4) { // musique coupée : plus aucun calcul
+            mus.assign(size_t(frames) * 2, 0.f);
+            music.render(mus.data(), frames);
+            for (int i = 0; i < frames; ++i) {
+                musicGain += (target - musicGain) * 0.0005;
+                buf[i * 2] += float(mus[i * 2] * musicGain);
+                buf[i * 2 + 1] += float(mus[i * 2 + 1] * musicGain);
+            }
+        } else {
+            musicGain = 0;
         }
         // bruitages
         {

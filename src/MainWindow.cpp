@@ -299,8 +299,31 @@ MainWindow::MainWindow(QWidget *parent)
     refreshResume();
 
     m_clock.start();
-    m_timer.setInterval(33);
+    m_timer.setInterval(m_frameInterval);
     connect(&m_timer, &QTimer::timeout, this, &MainWindow::tick);
+    // pause automatique (option) quand on passe sur une autre application ou qu'on réduit la fenêtre
+    connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        if (!m_metro->city())
+            return;
+        if (state != Qt::ApplicationActive) {
+            if (!m_bgPause || m_speedBeforeBackground >= 0)
+                return;
+            m_speedBeforeBackground = qRound(m_speed);
+            if (m_speed > 0)
+                m_speedGroup->button(0)->click();
+            if (!Audio::instance().muted()) {
+                Audio::instance().setMuted(true);
+                m_mutedForBackground = true;
+            }
+        } else if (m_speedBeforeBackground >= 0) {
+            if (m_speedBeforeBackground > 0 && m_speed == 0 && !m_decisionCard->isVisible())
+                m_speedGroup->button(m_speedBeforeBackground)->click();
+            if (m_mutedForBackground)
+                Audio::instance().setMuted(false);
+            m_speedBeforeBackground = -1;
+            m_mutedForBackground = false;
+        }
+    });
     m_timer.start();
 
     refreshAll();
@@ -511,6 +534,61 @@ Card *MainWindow::buildCityCard()
         QSettings().setValue("audio/sfxVolume", v);
         Audio::instance().play(Audio::Click);
     }, sound));
+    // Performances : qualité graphique, images par seconde, pause en arrière-plan, indicateur
+    QMenu *perf = menu->addMenu(Icons::icon(Icons::Gauge), tr("Performances"));
+    perf->setWindowFlags(perf->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    perf->setAttribute(Qt::WA_TranslucentBackground);
+    {
+        QSettings st;
+        perf->addSection(tr("Qualité graphique"));
+        auto *qGroup = new QActionGroup(this);
+        const int quality = st.value("perf/quality", 2).toInt();
+        const QString qNames[] = {tr("Économie (carte simplifiée, nuit sans lumières)"), tr("Équilibrée"),
+                                  tr("Maximale")};
+        for (int q = 2; q >= 0; --q) {
+            QAction *a = perf->addAction(qNames[q]);
+            a->setCheckable(true);
+            a->setChecked(q == quality);
+            qGroup->addAction(a);
+            connect(a, &QAction::triggered, this, [this, q] {
+                m_map->setQuality(q);
+                QSettings().setValue("perf/quality", q);
+            });
+        }
+        m_map->setQuality(quality);
+        perf->addSection(tr("Images par seconde"));
+        auto *fGroup = new QActionGroup(this);
+        const int fps = st.value("perf/fps", 30).toInt();
+        for (int f : {15, 30, 60}) {
+            QAction *a = perf->addAction(tr("%1 images/s").arg(f));
+            a->setCheckable(true);
+            a->setChecked(f == fps);
+            fGroup->addAction(a);
+            connect(a, &QAction::triggered, this, [this, f] {
+                m_frameInterval = 1000 / f;
+                m_timer.setInterval(m_frameInterval);
+                QSettings().setValue("perf/fps", f);
+            });
+        }
+        m_frameInterval = 1000 / std::clamp(fps, 15, 60);
+        perf->addSeparator();
+        QAction *bg = perf->addAction(tr("Pause quand la fenêtre est en arrière-plan"));
+        bg->setCheckable(true);
+        m_bgPause = st.value("perf/bgpause", false).toBool();
+        bg->setChecked(m_bgPause);
+        connect(bg, &QAction::toggled, this, [this](bool on) {
+            m_bgPause = on;
+            QSettings().setValue("perf/bgpause", on);
+        });
+        QAction *showPerf = perf->addAction(tr("Afficher les performances"));
+        showPerf->setCheckable(true);
+        showPerf->setChecked(st.value("perf/overlay", false).toBool());
+        m_map->setShowPerf(showPerf->isChecked());
+        connect(showPerf, &QAction::toggled, this, [this](bool on) {
+            m_map->setShowPerf(on);
+            QSettings().setValue("perf/overlay", on);
+        });
+    }
     QMenu *langMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Langue / Language"));
     langMenu->setWindowFlags(langMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     langMenu->setAttribute(Qt::WA_TranslucentBackground);
@@ -1428,6 +1506,19 @@ Card *MainWindow::buildGoalsCard()
     return card;
 }
 
+namespace {
+
+// la feuille de style d'une barre ne change que si sa couleur change (recalcul de style coûteux)
+void setBarColor(QProgressBar *bar, const QColor &c)
+{
+    if (bar->property("chunkColor").toString() == c.name())
+        return;
+    bar->setProperty("chunkColor", c.name());
+    bar->setStyleSheet(QStringLiteral("QProgressBar::chunk { background: %1; border-radius: 3px; }").arg(c.name()));
+}
+
+} // namespace
+
 QString MainWindow::bestScoreKey() const
 {
     return QStringLiteral("scores/%1").arg(QFileInfo(autosavePath()).completeBaseName());
@@ -1462,8 +1553,7 @@ void MainWindow::refreshGoals()
             r.title->setText(g.title);
             r.reward->setText(g.done() ? tr("✔ atteint") : QString());
             r.bar->setValue(int(p * 1000));
-            r.bar->setStyleSheet(QStringLiteral("QProgressBar::chunk { background: %1; border-radius: 3px; }")
-                                     .arg((g.done() ? Theme::Success : Theme::Accent).name()));
+            setBarColor(r.bar, g.done() ? Theme::Success : Theme::Accent);
             if (g.type == MissionGoal::NoSaturation) {
                 int sat = 0;
                 for (const Line &l : m_metro->lines())
@@ -1503,8 +1593,7 @@ void MainWindow::refreshGoals()
         r.title->setText(g.title);
         r.reward->setText(tr("+%1 pts · +%2").arg(g.points).arg(money(g.reward)));
         r.bar->setValue(int(g.progress() * 1000));
-        r.bar->setStyleSheet(QStringLiteral("QProgressBar::chunk { background: %1; border-radius: 3px; }")
-                                 .arg((g.progress() >= 0.75 ? Theme::Success : Theme::Accent).name()));
+        setBarColor(r.bar, g.progress() >= 0.75 ? Theme::Success : Theme::Accent);
         r.progress->setText(Metro::goalProgressText(g));
     }
     m_goalsFooter->setText(goals.isEmpty() ? tr("Tous les objectifs sont atteints !")
@@ -2016,7 +2105,6 @@ public:
             m_phase = std::fmod(m_phase + 0.05, 1.0);
             update();
         });
-        m_timer.start();
     }
     void target(QWidget *w)
     {
@@ -2025,14 +2113,17 @@ public:
     }
     void follow()
     {
-        if (!m_target || !m_target->isVisible()) {
+        if (!m_target || !m_target->isVisible() || !parentWidget()->isVisible()) {
             hide();
+            m_timer.stop();
             return;
         }
         const QRect r(m_target->mapTo(parentWidget(), QPoint(0, 0)), m_target->size());
         setGeometry(r.adjusted(-14, -14, 14, 14));
         show();
         raise();
+        if (!m_timer.isActive())
+            m_timer.start();
     }
 
 protected:
@@ -2088,7 +2179,7 @@ Card *MainWindow::buildTutorialCard()
     buttons->addWidget(m_tutNext);
     lay->addLayout(buttons);
     m_tutRing = new HighlightRing(m_root);
-    m_tutRing->hide();
+    static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
     return card;
 }
 
@@ -2104,7 +2195,7 @@ void MainWindow::endTutorial()
 {
     m_tutorialStep = -1;
     m_tutorialCard->hide();
-    m_tutRing->hide();
+    static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
     QSettings().setValue("tutorial/done", true);
     layoutOverlays();
 }
@@ -2883,8 +2974,19 @@ void MainWindow::tick()
     const double dt = m_clock.restart() / 1000.0;
     m_metro->advance(std::min(dt, 0.2), m_speed);
     if (m_metro->city()) {
-        m_map->update();
-        if (++m_frame % 8 == 0) {
+        // fenêtre réduite : plus aucun dessin, la simulation continue à 4 images/s
+        const bool shown = isVisible() && !isMinimized();
+        const int interval = shown ? m_frameInterval : 250;
+        if (m_timer.interval() != interval)
+            m_timer.setInterval(interval);
+        // carte redessinée seulement si quelque chose bouge : rames (jeu en marche) ou marqueurs d'événements
+        // (en pause, 10 images/s suffisent) ; fenêtre en arrière-plan : une image sur deux
+        const bool moving = m_speed > 0;
+        const bool pulses = !m_metro->activeEvents().isEmpty();
+        ++m_frame;
+        if (shown && (moving || (pulses && m_frame % 3 == 0)) && (isActiveWindow() || m_frame % 2 == 0))
+            m_map->update();
+        if (m_frame % 8 == 0) {
             refreshStats();
             refreshGoals();
         }

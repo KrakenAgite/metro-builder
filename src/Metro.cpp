@@ -112,6 +112,7 @@ void Metro::reset()
 void Metro::buildGrid()
 {
     m_grid = DemandGrid();
+    m_denomCache.clear(); // les attractivités dépendent de la grille
     if (!m_city || m_city->bounds.isEmpty())
         return;
     const QRectF b = m_city->bounds;
@@ -995,15 +996,25 @@ void Metro::recompute()
                     adj[a] << Edge{b, Rules::TransferPenalty + m_lines[nodeLine[b]].headwayMin / 2, {-1, si, 0}};
 
     // 3. Attractivité des destinations (modèle gravitaire)
+    // somme sur toute la ville pour chaque station : mise en cache par position, tant que la grille ne change pas
     QVector<double> denom(nS, 0);
     for (int si = 0; si < nS; ++si) {
         if (m_stations[si].lineCount == 0)
             continue;
+        const QPointF pos = m_stations[si].pos;
+        const qint64 key = (qint64(std::llround(pos.x())) << 32) ^ qint64(quint32(qint32(std::llround(pos.y()))));
+        if (auto it = m_denomCache.constFind(key); it != m_denomCache.constEnd()) {
+            denom[si] = it.value();
+            continue;
+        }
+        double sum = 0;
         for (int c = 0; c < nCells; ++c) {
             const double a = m_grid.jobs[c] + 0.25 * m_grid.pop[c];
             if (a > 0)
-                denom[si] += a * std::exp(-dist(m_grid.center(c), m_stations[si].pos) / Rules::GravityLength);
+                sum += a * std::exp(-dist(m_grid.center(c), pos) / Rules::GravityLength);
         }
+        denom[si] = sum;
+        m_denomCache.insert(key, sum);
     }
 
     // 4. Plus courts chemins + demande origine/destination
@@ -1255,9 +1266,11 @@ QVector<TrainVis> Metro::trains(double wagonSpacing) const
             const SegPath &sp = l.paths[seg];
             const double s = g.seg >= 0 ? eased * sp.length() : 0;
             const double center = dir == 0 ? s : sp.length() - s;
-            for (int w = 0; w < l.wagons; ++w) {
+            // espacement nul : seule la position de la rame compte (une pastille), pas celle de chaque voiture
+            const int cars = wagonSpacing > 0 ? l.wagons : 1;
+            for (int w = 0; w < cars; ++w) {
                 double ang = 0;
-                tv.wagonPos << sp.pointAt(center + (w - (l.wagons - 1) / 2.0) * wagonSpacing, &ang);
+                tv.wagonPos << sp.pointAt(center + (w - (cars - 1) / 2.0) * wagonSpacing, &ang);
                 tv.wagonAngle << ang;
             }
             tv.wagons = l.wagons;

@@ -554,7 +554,8 @@ private:
     QHash<qint64, float> m_growth;      // croissance autour des stations, par cellule (clé : coordonnées /100 m)
     double m_initialPopulation = 0;
     Mission m_mission;
-    bool m_freeBuild = false;           // import du réseau réel : rien n'est facturé
+    bool m_freeBuild = false;
+    QHash<qint64, double> m_denomCache; // attractivité des destinations vue de chaque position de station           // import du réseau réel : rien n'est facturé
     QVector<QPair<QRectF, QPolygonF>> m_waterIndex; // surfaces d'eau (boîte englobante, polygone)
     QVector<QPair<QRectF, QPolygonF>> m_riverIndex; // cours d'eau linéaires
     struct UndoState {

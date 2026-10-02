@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QSharedPointer>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QWidget>
 
@@ -35,6 +36,10 @@ public:
     void setInsets(int top, int bottom);
     void setDarkMap(bool dark);
     void setDayNight(bool on);
+    // qualité graphique : 0 économie, 1 équilibrée, 2 maximale
+    void setQuality(int quality);
+    int quality() const { return m_quality; }
+    void setShowPerf(bool on);
     bool dayNight() const { return m_dayNight; }
     double darkness() const; // 0 en plein jour, 1 en pleine nuit
     void setSchematic(bool on);
@@ -89,6 +94,12 @@ private:
     void drawHud(QPainter &p);
     void drawLegend(QPainter &p);
     void drawNight(QPainter &p, double dark);
+    void drawBase(QPainter &p);          // carte statique + calque de densité
+    void drawLights(QPainter &p);        // fenêtres et halos des stations (pleine intensité)
+    void drawBuildPreview(QPainter &p);  // tronçon en cours de tracé (suit la souris)
+    // couches mises en cache : redessinées seulement quand leur clé change (vue, réseau, survol…)
+    bool cacheValid(QPixmap &cache, QString &key, const QString &want);
+    QString viewKey() const;
     void drawProbe(QPainter &p);
     void drawExtendButtons(QPainter &p);
     void drawEvents(QPainter &p);
@@ -147,6 +158,19 @@ private:
     Route m_route;
     QPointF m_routeFrom;
     bool m_hasRouteFrom = false;
+
+    QPixmap m_baseCache, m_netCache, m_lightsCache, m_schemCache;
+    QHash<QRgb, QPixmap> m_trainSprites; // pastille d'une rame, par couleur de ligne
+    QString m_baseKey, m_netKey, m_lightsKey, m_schemKey;
+    quint64 m_netRev = 0;   // incrémenté à chaque changement du réseau ou des événements
+    quint64 m_layerRev = 0; // incrémenté à chaque reconstruction du calque
+    int m_schemLayer = 0;   // 0 : tout, 1 : partie fixe du plan, 2 : rames et bulles
+    int m_quality = 2;
+    bool m_showPerf = false;
+    QElapsedTimer m_fpsClock;
+    int m_fpsFrames = 0;
+    double m_fps = 0, m_paintMs = 0;
+    void drawPerf(QPainter &p);
 
     bool m_exporting = false;
     QSizeF m_exportSize;
