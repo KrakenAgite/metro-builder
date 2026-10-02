@@ -210,12 +210,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_missionEndCard = buildMissionEndCard();
     m_tutorialCard = buildTutorialCard();
     buildEventCards();
-    for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
+    for (Card *c : {m_cityCard, m_statsCard, m_dock, m_dockRight, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
                     m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
                     m_eventsCard, m_newsCard, m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
     m_dock->hide();
+    m_dockRight->hide();
     m_lineCard->hide();
     m_stationCard->hide();
     m_financeCard->hide();
@@ -230,7 +231,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_newsCard->hide();
     m_decisionCard->hide();
     m_toast = new Toast(m_root);
-    for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
+    for (Card *c : {m_cityCard, m_statsCard, m_dock, m_dockRight, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
                     m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
                     m_eventsCard, m_newsCard, m_decisionCard})
         c->ensurePolished();
@@ -682,14 +683,79 @@ Card *MainWindow::buildStatsCard()
     return card;
 }
 
+namespace {
+
+// Volet qui s'ouvre au-dessus d'un bouton de groupe ; se referme dès qu'on y choisit quelque chose
+QWidget *flyout(QToolButton *anchor, QMenu **menuOut = nullptr)
+{
+    auto *menu = new QMenu(anchor);
+    menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    menu->setAttribute(Qt::WA_TranslucentBackground);
+    auto *content = new QWidget;
+    content->setAttribute(Qt::WA_TranslucentBackground);
+    auto *action = new QWidgetAction(menu);
+    action->setDefaultWidget(content);
+    menu->addAction(action);
+    anchor->setMenu(menu);
+    anchor->setPopupMode(QToolButton::InstantPopup);
+    anchor->setStyleSheet(anchor->styleSheet() + "QToolButton::menu-indicator { image: none; width: 0; }");
+    if (menuOut)
+        *menuOut = menu;
+    return content;
+}
+
+void closeOnClick(QAbstractButton *b, QMenu *menu)
+{
+    QObject::connect(b, &QAbstractButton::clicked, menu, &QMenu::close);
+}
+
+// Pastille ronde d'une ligne (code sur sa couleur), pour le bouton « Lignes »
+QIcon lineIcon(const QString &code, const QColor &color)
+{
+    QPixmap pm(64, 64);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setPen(Qt::NoPen);
+    p.setBrush(color);
+    p.drawEllipse(QRectF(6, 6, 52, 52));
+    QFont f;
+    f.setBold(true);
+    f.setPixelSize(code.size() > 1 ? 22 : 28);
+    p.setFont(f);
+    p.setPen(color.lightnessF() > 0.62 ? QColor("#111") : Qt::white);
+    p.drawText(QRectF(0, 0, 64, 64), Qt::AlignCenter, code);
+    return QIcon(pm);
+}
+
+} // namespace
+
+// Deux barres compactes : outils et lignes en bas à gauche ; calques, temps et affichage en bas à droite.
+// Chaque groupe tient en une icône (celle du choix en cours) qui déroule les autres options.
 Card *MainWindow::buildDock()
 {
-    auto *card = new Card(nullptr, 18);
-    auto *lay = new QHBoxLayout(card);
-    lay->setContentsMargins(Card::Shadow + 8, Card::Shadow + 6, Card::Shadow + 8, Card::Shadow + 8);
-    lay->setSpacing(4);
+    auto makeDock = [] {
+        auto *card = new Card(nullptr, 18);
+        auto *lay = new QHBoxLayout(card);
+        lay->setContentsMargins(Card::Shadow + 8, Card::Shadow + 6, Card::Shadow + 8, Card::Shadow + 8);
+        lay->setSpacing(6);
+        return card;
+    };
+    auto rowOf = [](QWidget *content) {
+        auto *row = new QHBoxLayout(content);
+        row->setContentsMargins(6, 6, 6, 6);
+        row->setSpacing(4);
+        return row;
+    };
+    Card *left = makeDock();
+    auto *leftLay = static_cast<QHBoxLayout *>(left->layout());
+    m_dockRight = makeDock();
+    auto *rightLay = static_cast<QHBoxLayout *>(m_dockRight->layout());
 
     // Outils
+    m_toolsBtn = iconButton(Icons::Pointer, tr("Outils"), false, 46);
+    QMenu *toolsMenu;
+    auto *toolsRow = rowOf(flyout(m_toolsBtn, &toolsMenu));
     m_toolGroup = new QButtonGroup(this);
     const struct {
         Icons::Id icon;
@@ -707,68 +773,64 @@ Card *MainWindow::buildDock()
         if (t.tool == MapView::Delete)
             b->setProperty("variant", "danger");
         m_toolGroup->addButton(b, t.tool);
-        lay->addWidget(b);
+        toolsRow->addWidget(b);
+        closeOnClick(b, toolsMenu);
+        const Icons::Id icon = t.icon;
+        const QString tip = t.tip;
+        connect(b, &QToolButton::toggled, this, [this, icon, tip](bool on) {
+            if (on) {
+                m_toolsBtn->setIcon(Icons::icon(icon, Qt::white, Qt::white));
+                m_toolsBtn->setToolTip(tr("Outil : %1").arg(tip));
+            }
+        });
     }
     m_toolGroup->button(MapView::Select)->setChecked(true);
     connect(m_toolGroup, &QButtonGroup::idClicked, this, &MainWindow::setTool);
+    // l'outil actif est toujours visible : bouton en couleur d'accent
+    m_toolsBtn->setObjectName("toolsGroup"); // style limité à ce bouton (pas aux outils du volet)
+    m_toolsBtn->setStyleSheet("#toolsGroup { background: #4C8DFF; border-radius: 12px; }"
+                              "#toolsGroup:hover { background: #6A9FFF; }"
+                              "#toolsGroup::menu-indicator { image: none; width: 0; }");
+    leftLay->addWidget(m_toolsBtn);
 
-    lay->addSpacing(6);
-    lay->addWidget(vSeparator());
-    lay->addSpacing(6);
-
-    // Lignes
-    // pastilles des lignes : bande défilante (molette ou flèches) quand elles ne tiennent pas dans le dock
-    m_badgePrev = iconButton(Icons::ChevronLeft, tr("Lignes précédentes"), false, 28);
-    m_badgeNext = iconButton(Icons::ChevronRight, tr("Lignes suivantes"), false, 28);
+    // Lignes : pastille de la ligne choisie ; le volet montre toutes les lignes et la création
+    m_linesBtn = iconButton(Icons::Route, tr("Lignes — N : nouvelle ligne"), false, 46);
+    m_linesBtn->setIconSize(QSize(30, 30));
+    QWidget *linesContent = flyout(m_linesBtn, &m_linesMenu);
+    auto *linesCol = new QVBoxLayout(linesContent);
+    linesCol->setContentsMargins(8, 8, 8, 8);
+    linesCol->setSpacing(8);
     m_badgeBox = new QWidget;
-    m_badgeBox->setAttribute(Qt::WA_TranslucentBackground);
-    m_badgeLayout = new QHBoxLayout(m_badgeBox);
+    m_badgeLayout = new QGridLayout(m_badgeBox);
     m_badgeLayout->setContentsMargins(0, 0, 0, 0);
-    m_badgeLayout->setSpacing(2);
-    m_badgeLayout->setSizeConstraint(QLayout::SetFixedSize);
-    m_badgeScroll = new QScrollArea;
-    m_badgeScroll->setWidget(m_badgeBox);
-    m_badgeScroll->setFrameShape(QFrame::NoFrame);
-    m_badgeScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_badgeScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_badgeScroll->setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }");
-    m_badgeScroll->viewport()->setAutoFillBackground(false);
-    m_badgeScroll->viewport()->installEventFilter(this); // molette → défilement horizontal
-    auto scrollBy = [this](int dir) {
-        QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
-        bar->setValue(bar->value() + dir * std::max(84, m_badgeScroll->width() - 84));
-    };
-    connect(m_badgePrev, &QToolButton::clicked, this, [scrollBy] { scrollBy(-1); });
-    connect(m_badgeNext, &QToolButton::clicked, this, [scrollBy] { scrollBy(1); });
-    connect(m_badgeScroll->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateBadgeArrows);
-    connect(m_badgeScroll->horizontalScrollBar(), &QScrollBar::rangeChanged, this, &MainWindow::updateBadgeArrows);
-    lay->addWidget(m_badgePrev);
-    lay->addWidget(m_badgeScroll);
-    lay->addWidget(m_badgeNext);
-    auto *add = iconButton(Icons::Plus, tr("Nouvelle ligne — N (numéro) · Maj+N (lettre)"), false, 40);
-    add->setStyleSheet("QToolButton { border: 1.5px dashed rgba(255,255,255,0.25); border-radius: 20px; }"
-                       "QToolButton:hover { border-color: #4C8DFF; }");
-    auto *addMenu = new QMenu(add);
-    addMenu->setWindowFlags(addMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    addMenu->setAttribute(Qt::WA_TranslucentBackground);
-    QAction *addNumber = addMenu->addAction(Icons::icon(Icons::Plus), {}, this, [this] { newLine(false); });
-    QAction *addLetter = addMenu->addAction(Icons::icon(Icons::Plus), {}, this, [this] { newLine(true); });
-    connect(addMenu, &QMenu::aboutToShow, this, [this, addNumber, addLetter] {
+    m_badgeLayout->setSpacing(4);
+    linesCol->addWidget(m_badgeBox);
+    auto *addRow = new QVBoxLayout;
+    addRow->setSpacing(4);
+    auto *addNumber = new QPushButton(Icons::icon(Icons::Plus), {});
+    auto *addLetter = new QPushButton(Icons::icon(Icons::Plus), {});
+    for (QPushButton *b : {addNumber, addLetter}) {
+        b->setProperty("variant", "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        addRow->addWidget(b);
+        closeOnClick(b, m_linesMenu);
+    }
+    connect(addNumber, &QPushButton::clicked, this, [this] { newLine(false); });
+    connect(addLetter, &QPushButton::clicked, this, [this] { newLine(true); });
+    connect(m_linesMenu, &QMenu::aboutToShow, this, [this, addNumber, addLetter] {
         const QString n = m_metro->nextFreeCode(false), l = m_metro->nextFreeCode(true);
-        addNumber->setText(tr("Ligne %1 — numérotée").arg(n));
-        addLetter->setText(l.isEmpty() ? tr("Plus de lettre disponible") : tr("Ligne %1 — lettre").arg(l));
+        addNumber->setText(tr("Nouvelle ligne %1").arg(n));
+        addLetter->setText(l.isEmpty() ? tr("Plus de lettre disponible") : tr("Nouvelle ligne %1").arg(l));
         addLetter->setEnabled(!l.isEmpty());
     });
-    add->setMenu(addMenu);
-    add->setPopupMode(QToolButton::InstantPopup);
-    lay->addWidget(add);
-    m_addLineBtn = add;
-
-    lay->addSpacing(6);
-    lay->addWidget(vSeparator());
-    lay->addSpacing(6);
+    linesCol->addLayout(addRow);
+    leftLay->addWidget(m_linesBtn);
+    m_addLineBtn = m_linesBtn;
 
     // Calques
+    m_overlayMenuBtn = iconButton(Icons::Flame, tr("Calques de la carte"), false, 46);
+    QMenu *layersMenu;
+    auto *layersRow = rowOf(flyout(m_overlayMenuBtn, &layersMenu));
     m_overlayGroup = new QButtonGroup(this);
     const struct {
         Icons::Id icon;
@@ -781,35 +843,29 @@ Card *MainWindow::buildDock()
         {Icons::Gauge, tr("Calque : charge des lignes"), MapView::Load},
         {Icons::EyeOff, tr("Aucun calque"), MapView::NoOverlay},
     };
-    m_overlayMenuBtn = iconButton(Icons::Flame, tr("Calques de la carte"), false, 40);
-    auto *overlayMenu = new QMenu(m_overlayMenuBtn);
-    overlayMenu->setWindowFlags(overlayMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    overlayMenu->setAttribute(Qt::WA_TranslucentBackground);
-    m_overlayMenuBtn->setMenu(overlayMenu);
-    m_overlayMenuBtn->setPopupMode(QToolButton::InstantPopup);
-    m_overlayMenuBtn->hide();
-    lay->addWidget(m_overlayMenuBtn);
     for (const auto &o : overlays) {
-        auto *b = iconButton(o.icon, o.tip, true, 40);
+        auto *b = iconButton(o.icon, o.tip, true, 42);
         m_overlayGroup->addButton(b, o.ov);
-        lay->addWidget(b);
-        const int id = o.ov;
+        layersRow->addWidget(b);
+        closeOnClick(b, layersMenu);
         const Icons::Id icon = o.icon;
-        overlayMenu->addAction(Icons::icon(icon), o.tip, this, [this, id] { m_overlayGroup->button(id)->click(); });
-        connect(b, &QToolButton::toggled, this, [this, icon](bool on) {
-            if (on)
+        const QString tip = o.tip;
+        connect(b, &QToolButton::toggled, this, [this, icon, tip](bool on) {
+            if (on) {
                 m_overlayMenuBtn->setIcon(Icons::icon(icon));
+                m_overlayMenuBtn->setToolTip(tip);
+            }
         });
     }
     m_overlayGroup->button(MapView::Demand)->setChecked(true);
     connect(m_overlayGroup, &QButtonGroup::idClicked, this,
             [this](int id) { m_map->setOverlay(MapView::Overlay(id)); });
+    rightLay->addWidget(m_overlayMenuBtn);
 
-    lay->addSpacing(6);
-    lay->addWidget(vSeparator());
-    lay->addSpacing(6);
-
-    // Vitesse
+    // Temps
+    m_timeBtn = iconButton(Icons::Play, tr("Vitesse"), false, 46);
+    QMenu *timeMenu;
+    auto *timeRow = rowOf(flyout(m_timeBtn, &timeMenu));
     m_speedGroup = new QButtonGroup(this);
     const struct {
         Icons::Id icon;
@@ -821,20 +877,30 @@ Card *MainWindow::buildDock()
         {Icons::Fast, tr("Vitesse ×3"), 3},
         {Icons::Faster, tr("Vitesse ×10"), 10},
     };
-    for (const auto &s : speeds) {
-        auto *b = iconButton(s.icon, s.tip, true, 40);
-        m_speedGroup->addButton(b, s.speed);
-        lay->addWidget(b);
+    for (const auto &sp : speeds) {
+        auto *b = iconButton(sp.icon, sp.tip, true, 42);
+        m_speedGroup->addButton(b, sp.speed);
+        timeRow->addWidget(b);
+        closeOnClick(b, timeMenu);
+        const Icons::Id icon = sp.icon;
+        const QString tip = sp.tip;
+        connect(b, &QToolButton::toggled, this, [this, icon, tip](bool on) {
+            if (on) {
+                m_timeBtn->setIcon(Icons::icon(icon));
+                m_timeBtn->setToolTip(tip);
+            }
+        });
     }
     m_speedGroup->button(1)->setChecked(true);
     connect(m_speedGroup, &QButtonGroup::idClicked, this, [this](int id) { m_speed = id; });
+    rightLay->addWidget(m_timeBtn);
 
-    lay->addSpacing(6);
-    lay->addWidget(vSeparator());
-    lay->addSpacing(6);
+    // Affichage : carte sombre, plan schématique, objectifs, finances, son
+    m_displayBtn = iconButton(Icons::Sliders, tr("Affichage"), false, 46);
+    QMenu *displayMenu;
+    auto *displayRow = rowOf(flyout(m_displayBtn, &displayMenu));
 
-    // Carte claire / sombre (mémorisé entre les parties)
-    m_themeBtn = iconButton(Icons::Moon, tr("Carte sombre — D"), true, 40);
+    m_themeBtn = iconButton(Icons::Moon, tr("Carte sombre — D"), true, 42);
     auto applyTheme = [this](bool dark) {
         m_map->setDarkMap(dark);
         m_themeBtn->setIcon(Icons::icon(dark ? Icons::Sun : Icons::Moon));
@@ -845,18 +911,14 @@ Card *MainWindow::buildDock()
     const bool dark = QSettings().value("map/dark", false).toBool();
     m_themeBtn->setChecked(dark);
     applyTheme(dark);
-    lay->addWidget(m_themeBtn);
 
-    // Plan schématique du réseau
-    m_schemaBtn = iconButton(Icons::Schema, tr("Plan schématique — M"), true, 40);
+    m_schemaBtn = iconButton(Icons::Schema, tr("Plan schématique — M"), true, 42);
     connect(m_schemaBtn, &QToolButton::toggled, this, [this](bool on) {
         m_map->setSchematic(on);
         m_schemaBtn->setToolTip(on ? tr("Revenir à la carte — M") : tr("Plan schématique — M"));
     });
-    lay->addWidget(m_schemaBtn);
 
-    // Score et objectifs
-    m_goalsBtn = iconButton(Icons::Trophy, tr("Score et objectifs — O"), true, 40);
+    m_goalsBtn = iconButton(Icons::Trophy, tr("Score et objectifs — O"), true, 42);
     m_goalsBtn->setChecked(QSettings().value("ui/goals", true).toBool());
     connect(m_goalsBtn, &QToolButton::toggled, this, [this](bool on) {
         QSettings().setValue("ui/goals", on);
@@ -864,20 +926,16 @@ Card *MainWindow::buildDock()
         layoutOverlays();
         m_layoutTimer.start(0);
     });
-    lay->addWidget(m_goalsBtn);
 
-    // Finances
-    m_financeBtn = iconButton(Icons::Wallet, tr("Finances — B"), true, 40);
+    m_financeBtn = iconButton(Icons::Wallet, tr("Finances — B"), true, 42);
     connect(m_financeBtn, &QToolButton::toggled, this, [this](bool on) {
         m_financeCard->setVisible(on && m_metro->city());
         refreshFinance();
         layoutOverlays();
         m_layoutTimer.start(0);
     });
-    lay->addWidget(m_financeBtn);
 
-    // Son (coupure rapide ; réglages fins dans le menu ☰ → Son)
-    m_soundBtn = iconButton(Icons::Speaker, tr("Couper le son"), false, 40);
+    m_soundBtn = iconButton(Icons::Speaker, tr("Couper le son"), false, 42);
     auto syncSound = [this] {
         const bool muted = Audio::instance().muted();
         m_soundBtn->setIcon(Icons::icon(muted ? Icons::SpeakerOff : Icons::Speaker));
@@ -890,8 +948,12 @@ Card *MainWindow::buildDock()
         syncSound();
     });
     syncSound();
-    lay->addWidget(m_soundBtn);
-    return card;
+    for (QToolButton *b : {m_themeBtn, m_schemaBtn, m_goalsBtn, m_financeBtn, m_soundBtn}) {
+        displayRow->addWidget(b);
+        closeOnClick(b, displayMenu);
+    }
+    rightLay->addWidget(m_displayBtn);
+    return left;
 }
 
 Card *MainWindow::buildLineCard()
@@ -2220,30 +2282,31 @@ void MainWindow::showTutorialStep(int step)
             "et des emplois attendent un métro : à vous de les desservir."),
          nullptr, {}},
         {tr("Construisez des stations"),
-         tr("Choisissez l'outil Station (touche 2) puis cliquez trois fois sur la carte, dans des zones rouges, "
-            "à environ 500 m les unes des autres. Chaque station dessert les rues à 5 minutes à pied."),
-         m_toolGroup->button(MapView::AddStation),
+         tr("Ouvrez les outils (en bas à gauche) et choisissez Station, ou appuyez sur 2. Cliquez ensuite trois fois "
+            "sur la carte, dans des zones rouges, à environ 500 m les unes des autres. Chaque station dessert les "
+            "rues à 5 minutes à pied."),
+         m_toolsBtn,
          [this] { return m_metro->stations().size() >= m_tutStations + 3; }},
         {tr("Tracez une ligne"),
-         tr("Cliquez sur « + » pour créer une ligne : l'outil Tracer s'active. Cliquez ensuite vos stations dans "
-            "l'ordre du parcours. Le tunnel est facturé au kilomètre."),
+         tr("Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l'outil Tracer s'active. Cliquez "
+            "ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre."),
          m_addLineBtn, activeLine},
         {tr("Le métro roule !"),
          tr("Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est "
-            "captée. Les boutons du calque (flamme, maison, mallette…) montrent habitants, emplois et charge."),
-         m_overlayGroup->button(MapView::Demand), {}},
+            "captée. En bas à droite, le bouton des calques montre aussi habitants, emplois et charge des lignes."),
+         m_overlayMenuBtn, {}},
         {tr("Réglez vos trains"),
          tr("La fiche de la ligne, à gauche, règle la longueur des rames (3 à 5 voitures) et leur nombre. "
             "Une ligne saturée perd des voyageurs ; une ligne vide coûte pour rien."),
-         m_lineCard->isVisible() ? static_cast<QWidget *>(m_lineCard) : m_badgeScroll, {}},
+         m_lineCard->isVisible() ? static_cast<QWidget *>(m_lineCard) : m_linesBtn, {}},
         {tr("Gérez votre budget"),
          tr("Les voyageurs rapportent de l'argent chaque mois, les rames et les stations en coûtent. "
             "Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien."),
-         m_financeBtn, {}},
+         m_displayBtn, {}},
         {tr("À vous de jouer"),
-         tr("Les objectifs (trophée) rapportent des points et des primes. Accélérez le temps quand votre réseau "
-            "est prêt, et retrouvez l'aide complète avec F1. Bonne construction !"),
-         m_goalsBtn, {}},
+         tr("Le bouton Affichage (en bas à droite) ouvre objectifs, finances, plan schématique et carte sombre ; "
+            "celui d'à côté règle la vitesse du temps. L'aide complète est sous F1. Bonne construction !"),
+         m_displayBtn, {}},
     };
     if (step < 0 || step >= steps.size()) {
         endTutorial();
@@ -2612,13 +2675,6 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         layoutOverlays();
     if (watched == m_moneyChip && event->type() == QEvent::MouseButtonPress)
         m_financeBtn->toggle();
-    if (m_badgeScroll && watched == m_badgeScroll->viewport() && event->type() == QEvent::Wheel) {
-        const auto *we = static_cast<QWheelEvent *>(event);
-        const int delta = we->angleDelta().y() != 0 ? we->angleDelta().y() : we->angleDelta().x();
-        QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
-        bar->setValue(bar->value() - delta / 2);
-        return true;
-    }
     return QMainWindow::eventFilter(watched, event);
 }
 
@@ -2659,40 +2715,12 @@ void MainWindow::layoutOverlays()
     m_statsCard->adjustSize();
     m_statsCard->move(W - m_statsCard->width() - kMargin, kMargin);
 
-    // dock : jamais plus large que la fenêtre ; la bande des lignes absorbe le manque de place
-    const int badgesW = m_badgeBox->sizeHint().width();
-    m_badgeScroll->setFixedSize(badgesW, m_badgeBox->sizeHint().height());
-    m_badgePrev->setVisible(false);
-    m_badgeNext->setVisible(false);
-    const int maxDock = W - 2 * kMargin;
-    // dock compact : les 5 calques deviennent un seul bouton à menu si la place manque
-    {
-        const int minBadges = std::min(badgesW, 3 * 42) + (badgesW > 3 * 42 ? 2 * (28 + 4) : 0);
-        for (QAbstractButton *b : m_overlayGroup->buttons())
-            b->setVisible(true);
-        m_overlayMenuBtn->setVisible(false);
-        m_badgeScroll->setFixedWidth(minBadges);
-        m_dock->adjustSize();
-        const bool compact = m_dock->sizeHint().width() > maxDock;
-        for (QAbstractButton *b : m_overlayGroup->buttons())
-            b->setVisible(!compact);
-        m_overlayMenuBtn->setVisible(compact);
-        m_badgeScroll->setFixedWidth(badgesW);
-    }
+    // barres du bas : outils et lignes à gauche, calques, temps et affichage à droite
     m_dock->adjustSize();
-    if (m_dock->sizeHint().width() > maxDock && m_badgeScroll->isVisible()) {
-        const int arrows = 2 * (m_badgePrev->sizeHint().width() + 4);
-        const int excess = m_dock->sizeHint().width() + arrows - maxDock;
-        m_badgeScroll->setFixedWidth(std::max(84, badgesW - excess));
-        m_badgePrev->setVisible(true);
-        m_badgeNext->setVisible(true);
-        m_dock->adjustSize();
-    }
-    if (m_dock->width() > maxDock)
-        m_dock->resize(maxDock, m_dock->height());
-    updateBadgeArrows();
-    const int dockTop = H - m_dock->height() - kMargin;
-    m_dock->move((W - m_dock->width()) / 2, dockTop);
+    m_dockRight->adjustSize();
+    const int dockTop = H - std::max(m_dock->height(), m_dockRight->height()) - kMargin;
+    m_dock->move(kMargin, H - m_dock->height() - kMargin);
+    m_dockRight->move(W - m_dockRight->width() - kMargin, H - m_dockRight->height() - kMargin);
 
     // Panneaux latéraux : jamais plus hauts que l'espace libre ; au-delà, leur contenu défile.
     const bool compact = H < 820;
@@ -2810,7 +2838,8 @@ void MainWindow::layoutOverlays()
     // messages au-dessus de la bulle d'aide de la carte
     m_toast->setBottom(hasCity ? dockTop + Card::Shadow - 56 : H - 40);
     for (QWidget *w : {static_cast<QWidget *>(m_cityCard), static_cast<QWidget *>(m_statsCard),
-                       static_cast<QWidget *>(m_dock), static_cast<QWidget *>(m_lineCard),
+                       static_cast<QWidget *>(m_dock), static_cast<QWidget *>(m_dockRight),
+                       static_cast<QWidget *>(m_lineCard),
                        static_cast<QWidget *>(m_stationCard), static_cast<QWidget *>(m_goalsCard),
                        static_cast<QWidget *>(m_routeCard), static_cast<QWidget *>(m_profileCard),
                        static_cast<QWidget *>(m_financeCard),
@@ -2907,6 +2936,7 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     m_loadBtn->setToolTip(tr("Charger la ville"));
     m_statsCard->show();
     m_dock->show();
+    m_dockRight->show();
     m_bestScore = QSettings().value(bestScoreKey(), 0).toDouble();
     refreshGoals();
     m_lineCard->hide();
@@ -3014,7 +3044,7 @@ void MainWindow::setTool(int tool)
         b->setChecked(true);
     m_map->setTool(MapView::Tool(tool));
     if (tool == MapView::BuildLine && !m_metro->line(m_currentLine))
-        m_toast->show(tr("Sélectionnez une ligne en bas, ou créez-en une avec « + »"));
+        m_toast->show(tr("Choisissez ou créez une ligne avec le bouton Lignes, en bas à gauche"));
 }
 
 void MainWindow::newLine(bool letter)
@@ -3122,6 +3152,8 @@ void MainWindow::refreshStats()
 void MainWindow::refreshLines()
 {
     clearLayout(m_badgeLayout);
+    const int columns = std::clamp(int(std::ceil(std::sqrt(double(m_metro->lines().size())))), 4, 8);
+    int i = 0;
     for (const Line &l : m_metro->lines()) {
         // pas d'alerte « saturée » pour une ligne à l'arrêt (grève) : elle n'a simplement plus de capacité
         auto *b = new LineBadge(l.id, l.code, l.color, l.loadRatio() > 1 && m_metro->lineCapacityFactor(l.id) > 0);
@@ -3132,27 +3164,24 @@ void MainWindow::refreshLines()
                           .arg(count(l.ridership))
                           .arg(l.loadRatio() > 1 ? tr("<br><span style='color:#FF8A96'>Saturée</span>") : QString()));
         const int id = l.id;
-        connect(b, &LineBadge::clicked, this, [this, id] { selectLine(id == m_currentLine ? -1 : id); });
-        m_badgeLayout->addWidget(b);
+        connect(b, &LineBadge::clicked, this, [this, id] {
+            m_linesMenu->close();
+            selectLine(id == m_currentLine ? -1 : id);
+        });
+        m_badgeLayout->addWidget(b, i / columns, i % columns);
+        ++i;
     }
-    m_badgeScroll->setVisible(!m_metro->lines().isEmpty());
-    // la ligne sélectionnée reste visible dans la bande
-    QTimer::singleShot(0, this, [this] {
-        for (auto *b : m_badgeBox->findChildren<LineBadge *>())
-            if (b->isChecked())
-                m_badgeScroll->ensureWidgetVisible(b, 8, 0);
-        updateBadgeArrows();
-    });
-}
-
-void MainWindow::updateBadgeArrows()
-{
-    const QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
-    const bool overflow = bar->maximum() > 0 && m_badgeScroll->isVisible();
-    m_badgePrev->setVisible(overflow);
-    m_badgeNext->setVisible(overflow);
-    m_badgePrev->setEnabled(bar->value() > 0);
-    m_badgeNext->setEnabled(bar->value() < bar->maximum());
+    m_badgeBox->setVisible(i > 0);
+    // bouton du groupe : pastille de la ligne choisie, sinon icône générique
+    if (const Line *cur = m_metro->line(m_currentLine)) {
+        m_linesBtn->setIcon(lineIcon(cur->code, cur->color));
+        m_linesBtn->setToolTip(tr("%1 — cliquez pour changer de ligne ou en créer une").arg(cur->name));
+    } else {
+        m_linesBtn->setIcon(Icons::icon(Icons::Route));
+        m_linesBtn->setToolTip(tr("Lignes (%1) — choisir ou créer une ligne").arg(m_metro->lines().size()));
+    }
+    if (m_linesMenu->isVisible())
+        m_linesMenu->adjustSize();
 }
 
 void MainWindow::refreshLineEditor()

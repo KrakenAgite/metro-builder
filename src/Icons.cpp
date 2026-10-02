@@ -274,6 +274,15 @@ void draw(QPainter &p, Id id, const QColor &c)
         p.drawEllipse(QPointF(3, 7), 1.6, 1.6);
         p.drawEllipse(QPointF(21, 14), 1.6, 1.6);
         break;
+    case Sliders: // réglages d'affichage : trois curseurs
+        p.drawLine(QPointF(4, 7), QPointF(20, 7));
+        p.drawLine(QPointF(4, 12), QPointF(20, 12));
+        p.drawLine(QPointF(4, 17), QPointF(20, 17));
+        fill();
+        p.drawEllipse(QPointF(9, 7), 2.2, 2.2);
+        p.drawEllipse(QPointF(15, 12), 2.2, 2.2);
+        p.drawEllipse(QPointF(8, 17), 2.2, 2.2);
+        break;
     case ChevronLeft:
         p.drawPath(poly({{14.5, 6}, {8.5, 12}, {14.5, 18}}));
         break;

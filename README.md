@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.7.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.8.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -59,7 +59,8 @@ L'interface est une carte plein écran avec des panneaux flottants :
 |---|---|
 | Haut gauche | Recherche de ville, rayon, chargement, menu ☰ (fichier Overpass, sauvegarde, aide) |
 | Haut droite | Indicateurs : budget et bilan mensuel, date, voyageurs/h, demande captée, habitants desservis |
-| Bas (dock) | Outils · pastilles des lignes + « nouvelle ligne » · calques · vitesse · recadrer · carte claire/sombre |
+| Bas à gauche | **Outils** (icône de l'outil actif) · **Lignes** (pastille de la ligne choisie ; le volet liste toutes les lignes et en crée de nouvelles) |
+| Bas à droite | **Calques** · **Vitesse** · **Affichage** (carte sombre, plan schématique, objectifs, finances, son) — chaque icône déroule ses choix |
 | Bas gauche | Éditeur de la ligne sélectionnée (arrêts façon plan de ligne, voitures, rames, boucle, indicateurs) |
 | Droite | Fiche de la station sélectionnée |
 
@@ -70,7 +71,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
    Géocodage et tuiles sont mis en cache (`~/.cache/MetroBuilder/`) : une ville déjà vue se recharge sans réseau.
 2. **Station (2)** : clic sur la carte → la station s'accroche à la rue la plus proche et prend son nom.
    Le cercle montre la zone desservie à pied (300 m = desserte complète, 800 m = limite).
-3. **+** dans le dock crée une ligne numérotée (**N** : 1, 2, 3…) ou désignée par une lettre (**Maj+N** : A, B…)
+3. Le bouton **Lignes** (en bas à gauche) crée une ligne numérotée (**N** : 1, 2, 3…) ou désignée par une lettre (**Maj+N** : A, B…)
    et passe en mode **Tracer (3)**. Dans l'éditeur de ligne, la pastille permet de changer de numéro/lettre et la
    pastille de couleur propose une palette de couleurs prédéfinies. En mode tracé, cliquez les stations
    dans l'ordre (un clic dans le vide crée une station). Ctrl+clic ajoute en tête, clic droit retire l'arrêt.
@@ -90,17 +91,17 @@ L'interface est une carte plein écran avec des panneaux flottants :
    carte) l'étendent d'1 km vers le nord, l'est, le sud ou l'ouest (jusqu'à 16 km de côté). Seules les tuiles
    manquantes sont téléchargées, le réseau est conservé et la demande recalculée ; la zone est enregistrée
    dans les sauvegardes.
-8. **Finances** (bouton portefeuille du dock, touche **B** ou clic sur le budget) : trésorerie, recettes et
+8. **Finances** (bouton Affichage → portefeuille, touche **B** ou clic sur le budget) : trésorerie, recettes et
    coûts d'exploitation par mois, résultat d'exploitation, investissements, fréquentation et demande captée
    sur la période choisie (6 mois, 1 an, 2 ans, 5 ans ou toute la partie ; survol = valeurs du mois), et rentabilité de chaque ligne. L'historique est
    enregistré dans les sauvegardes.
-   **Score et objectifs** (bouton trophée du dock ou **O**) : trois objectifs à la fois (stations, lignes,
+   **Score et objectifs** (bouton Affichage → trophée, ou **O**) : trois objectifs à la fois (stations, lignes,
    voyageurs, demande captée, habitants desservis, correspondances, kilomètres de lignes, trésorerie, mois
    bénéficiaires d'affilée, chiffre d'affaires). Chacun rapporte des points et une prime, puis cède la place au
    palier suivant d'une autre famille. Chaque fin de mois ajoute aussi des points (voyageurs/h ÷ 40, demande
    captée, bonus si l'exploitation est rentable). Score et objectifs sont sauvegardés ; le record de chaque ville
    est conservé.
-9. **Plan schématique** (bouton plan du dock ou **M**) : le réseau redessiné comme un plan de métro — tronçons
+9. **Plan schématique** (bouton Affichage → plan, ou **M**) : le réseau redessiné comme un plan de métro — tronçons
    à 0°/45°/90°, inter-stations régulières sur une grille, correspondances marquées, noms placés sans chevaucher
    les tracés, légende des lignes et rames animées. On peut y sélectionner, tracer avec des stations existantes
    ou démolir ; la construction de nouvelles stations se fait sur la carte.
@@ -187,7 +188,7 @@ signalés sur la carte. Leur moteur est dans `src/Events.cpp`.
 
 **Son** : musique d'ambiance calme générée en continu (nappe lente qui respire, accords tenus 8 s, basse douce, notes de piano feutré espacées dans un écho sombre) et bruitages synthétisés
 (station, arrêt, carillon de nouvelle ligne, démolition, recettes, événements, erreurs), tous calculés en code
-(`src/Audio.cpp`, aucun fichier son). Bouton haut-parleur du dock pour couper, ☰ → Son pour la musique, les
+(`src/Audio.cpp`, aucun fichier son). Bouton Affichage → haut-parleur pour couper, ☰ → Son pour la musique, les
 bruitages et leurs volumes.
 
 **Sauvegardes** : une partie enregistre tout — ville et zone (agrandissements compris), stations, lignes,

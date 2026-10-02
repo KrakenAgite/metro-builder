@@ -32,6 +32,8 @@ class QLabel;
 class QSlider;
 class QProgressBar;
 class QHBoxLayout;
+class QGridLayout;
+class QMenu;
 class QVBoxLayout;
 struct GameEvent;
 struct Objective;
@@ -148,16 +150,15 @@ private:
     // dock du bas
     Card *m_dock;
     QButtonGroup *m_toolGroup, *m_overlayGroup, *m_speedGroup;
-    QHBoxLayout *m_badgeLayout;
+    QGridLayout *m_badgeLayout;
     QToolButton *m_themeBtn;
     QToolButton *m_schemaBtn;
     QToolButton *m_financeBtn;
     QToolButton *m_soundBtn;
     QWidget *m_badgeBox;
-    class QScrollArea *m_badgeScroll = nullptr;
-    QToolButton *m_badgePrev, *m_badgeNext;
-    QToolButton *m_overlayMenuBtn; // calques regroupés dans un menu quand le dock manque de place
-    void updateBadgeArrows();
+    Card *m_dockRight;             // calques, temps, affichage (en bas à droite)
+    QToolButton *m_toolsBtn, *m_linesBtn, *m_overlayMenuBtn, *m_timeBtn, *m_displayBtn; // un bouton par groupe
+    QMenu *m_linesMenu;
 
     // éditeur de ligne
     Card *m_lineCard;

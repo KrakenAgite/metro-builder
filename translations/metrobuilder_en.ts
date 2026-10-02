@@ -476,28 +476,8 @@
         <translation>Route: travel time between two points — 5</translation>
     </message>
     <message>
-        <source>Lignes précédentes</source>
-        <translation>Previous lines</translation>
-    </message>
-    <message>
-        <source>Lignes suivantes</source>
-        <translation>Next lines</translation>
-    </message>
-    <message>
-        <source>Nouvelle ligne — N (numéro) · Maj+N (lettre)</source>
-        <translation>New line — N (number) · Shift+N (letter)</translation>
-    </message>
-    <message>
-        <source>Ligne %1 — numérotée</source>
-        <translation>Line %1 — numbered</translation>
-    </message>
-    <message>
         <source>Plus de lettre disponible</source>
         <translation>No letter left</translation>
-    </message>
-    <message>
-        <source>Ligne %1 — lettre</source>
-        <translation>Line %1 — letter</translation>
     </message>
     <message>
         <source>Calque : demande captée / non desservie</source>
@@ -1044,24 +1024,12 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Build stations</translation>
     </message>
     <message>
-        <source>Choisissez l'outil Station (touche 2) puis cliquez trois fois sur la carte, dans des zones rouges, à environ 500 m les unes des autres. Chaque station dessert les rues à 5 minutes à pied.</source>
-        <translation>Choose the Station tool (key 2) then click three times on the map, in red areas, about 500 m apart. Each station serves the streets within a 5-minute walk.</translation>
-    </message>
-    <message>
         <source>Tracez une ligne</source>
         <translation>Lay out a line</translation>
     </message>
     <message>
-        <source>Cliquez sur « + » pour créer une ligne : l'outil Tracer s'active. Cliquez ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre.</source>
-        <translation>Click « + » to create a line: the Lay out tool turns on. Then click your stations in route order. Tunnels are charged per kilometre.</translation>
-    </message>
-    <message>
         <source>Le métro roule !</source>
         <translation>The metro is running!</translation>
-    </message>
-    <message>
-        <source>Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est captée. Les boutons du calque (flamme, maison, mallette…) montrent habitants, emplois et charge.</source>
-        <translation>The coloured dots are your trains. Around the stations the map turns green: demand is captured there. The layer buttons (flame, house, briefcase…) show residents, jobs and load.</translation>
     </message>
     <message>
         <source>Réglez vos trains</source>
@@ -1082,10 +1050,6 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>À vous de jouer</source>
         <translation>Your turn</translation>
-    </message>
-    <message>
-        <source>Les objectifs (trophée) rapportent des points et des primes. Accélérez le temps quand votre réseau est prêt, et retrouvez l'aide complète avec F1. Bonne construction !</source>
-        <translation>Objectives (trophy) earn points and bonuses. Speed up time when your network is ready, and find the full help with F1. Happy building!</translation>
     </message>
     <message>
         <source>Tutoriel · étape %1 sur %2</source>
@@ -1512,10 +1476,6 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Map enlarged: %1 × %2 km · %3 buildings · ~%4 residents</translation>
     </message>
     <message>
-        <source>Sélectionnez une ligne en bas, ou créez-en une avec « + »</source>
-        <translation>Select a line at the bottom, or create one with « + »</translation>
-    </message>
-    <message>
         <source>%1%2 /mois</source>
         <translation>%1%2 /month</translation>
     </message>
@@ -1758,6 +1718,58 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Afficher les performances</source>
         <translation>Show performance</translation>
+    </message>
+    <message>
+        <source>Outils</source>
+        <translation>Tools</translation>
+    </message>
+    <message>
+        <source>Outil : %1</source>
+        <translation>Tool: %1</translation>
+    </message>
+    <message>
+        <source>Lignes — N : nouvelle ligne</source>
+        <translation>Lines — N: new line</translation>
+    </message>
+    <message>
+        <source>Vitesse</source>
+        <translation>Speed</translation>
+    </message>
+    <message>
+        <source>Affichage</source>
+        <translation>Display</translation>
+    </message>
+    <message>
+        <source>Ouvrez les outils (en bas à gauche) et choisissez Station, ou appuyez sur 2. Cliquez ensuite trois fois sur la carte, dans des zones rouges, à environ 500 m les unes des autres. Chaque station dessert les rues à 5 minutes à pied.</source>
+        <translation>Open the tools (bottom left) and choose Station, or press 2. Then click three times on the map, in red areas, about 500 m apart. Each station serves the streets within a 5-minute walk.</translation>
+    </message>
+    <message>
+        <source>Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l'outil Tracer s'active. Cliquez ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre.</source>
+        <translation>Open the Lines button, next to the tools, and create a line: the Lay out tool turns on. Then click your stations in route order. Tunnels are charged per kilometre.</translation>
+    </message>
+    <message>
+        <source>Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est captée. En bas à droite, le bouton des calques montre aussi habitants, emplois et charge des lignes.</source>
+        <translation>The coloured dots are your trains. Around the stations the map turns green: demand is captured there. Bottom right, the layers button also shows residents, jobs and line load.</translation>
+    </message>
+    <message>
+        <source>Le bouton Affichage (en bas à droite) ouvre objectifs, finances, plan schématique et carte sombre ; celui d'à côté règle la vitesse du temps. L'aide complète est sous F1. Bonne construction !</source>
+        <translation>The Display button (bottom right) opens objectives, finances, the schematic map and the dark map; the one next to it sets the speed of time. Full help is under F1. Happy building!</translation>
+    </message>
+    <message>
+        <source>Choisissez ou créez une ligne avec le bouton Lignes, en bas à gauche</source>
+        <translation>Choose or create a line with the Lines button, bottom left</translation>
+    </message>
+    <message>
+        <source>%1 — cliquez pour changer de ligne ou en créer une</source>
+        <translation>%1 — click to switch line or create one</translation>
+    </message>
+    <message>
+        <source>Lignes (%1) — choisir ou créer une ligne</source>
+        <translation>Lines (%1) — choose or create a line</translation>
+    </message>
+    <message>
+        <source>Nouvelle ligne %1</source>
+        <translation>New line %1</translation>
     </message>
 </context>
 <context>
