@@ -7,7 +7,9 @@ cd "$(dirname "$0")/.."
 TC=win-toolchain
 QT=$TC/qt
 OBJDUMP=$TC/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64/bin/llvm-objdump
+VERSION=$(sed -n 's/^project(MetroBuilder VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
 OUT=dist/MetroBuilder-windows
+ZIP=MetroBuilder-$VERSION-windows-x64.zip
 
 cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=$TC/mingw-toolchain.cmake -DCMAKE_BUILD_TYPE=Release >/dev/null
 cmake --build build-win -j"$(nproc)"
@@ -37,6 +39,6 @@ done
 
 printf '[Paths]\nPlugins = .\n' > "$OUT/qt.conf"
 cp README.md "$OUT/LISEZMOI.md"
-(cd dist && rm -f MetroBuilder-windows.zip && zip -qr MetroBuilder-windows.zip MetroBuilder-windows)
-echo "→ $OUT ($(du -sh "$OUT" | cut -f1)), archive dist/MetroBuilder-windows.zip ($(du -h dist/MetroBuilder-windows.zip | cut -f1))"
+(cd dist && rm -f "$ZIP" && zip -qr "$ZIP" MetroBuilder-windows)
+echo "→ $OUT ($(du -sh "$OUT" | cut -f1)), archive dist/$ZIP ($(du -h "dist/$ZIP" | cut -f1))"
 ls "$OUT"

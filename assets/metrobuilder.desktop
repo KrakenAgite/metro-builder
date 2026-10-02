@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Metro Builder
+GenericName=Construction de métro
+Comment=Construisez le métro d'une vraie ville (données OpenStreetMap)
+Exec=metrobuilder
+Icon=metrobuilder
+Terminal=false
+Categories=Game;Simulation;
+Keywords=metro;subway;transport;osm;

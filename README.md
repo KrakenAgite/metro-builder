@@ -27,8 +27,25 @@ scripts/build-windows.sh
 ```
 
 Le script produit `dist/MetroBuilder-windows/` (exécutable, DLL Qt et C++, plugins `platforms` et `tls`) et
-`dist/MetroBuilder-windows.zip` : à décompresser sous Windows 10/11 64 bits, puis lancer `metrobuilder.exe`.
+`dist/MetroBuilder-<version>-windows-x64.zip` : à décompresser sous Windows 10/11 64 bits, puis lancer `metrobuilder.exe`.
 Le son passe par waveOut (winmm) sous Windows.
+
+### Paquet Debian
+
+```bash
+scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
+sudo apt install ./dist/metrobuilder_1.0.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+```
+
+Les dépendances (Qt 6, PulseAudio, OpenSSL) sont calculées par `dpkg-shlibdeps` ; paquet prévu pour
+Debian 13 (trixie) ou une distribution aussi récente.
+
+### Releases
+
+Les paquets prêts à installer (`.deb` pour Debian, `.zip` pour Windows 64 bits) sont attachés aux
+[releases GitHub](https://github.com/KrakenAgite/metro-builder/releases). Pour en publier une : changer
+`VERSION` dans `CMakeLists.txt`, lancer les deux scripts, puis
+`gh release create v<version> dist/*.deb dist/*.zip`.
 
 ## Jouer
 
