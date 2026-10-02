@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(MetroBuilder VERSION 1.0.0 LANGUAGES CXX)
+project(MetroBuilder VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,7 +30,7 @@ target_link_libraries(metrobuilder PRIVATE Qt6::Widgets Qt6::Network Qt6::Concur
 
 # Son : waveOut sous Windows ; ailleurs PulseAudio (fonctionne aussi avec PipeWire), facultatif.
 if(WIN32)
-    target_link_libraries(metrobuilder PRIVATE winmm)
+    target_link_libraries(metrobuilder PRIVATE winmm shell32)
     set_target_properties(metrobuilder PROPERTIES WIN32_EXECUTABLE ON) # pas de console
     target_sources(metrobuilder PRIVATE assets/metrobuilder.rc)
     return()

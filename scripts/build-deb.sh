@@ -15,6 +15,9 @@ strip --strip-unneeded "$STAGE/usr/bin/metrobuilder"
 install -Dm644 assets/metrobuilder.desktop "$STAGE/usr/share/applications/metrobuilder.desktop"
 install -Dm644 assets/metrobuilder.png "$STAGE/usr/share/icons/hicolor/256x256/apps/metrobuilder.png"
 install -Dm644 assets/logo.svg "$STAGE/usr/share/icons/hicolor/scalable/apps/metrobuilder.svg"
+# sauvegardes .metro : type MIME, icône de document, ouverture par le jeu (caches mis à jour par les triggers dpkg)
+install -Dm644 assets/metrobuilder-mime.xml "$STAGE/usr/share/mime/packages/metrobuilder.xml"
+install -Dm644 assets/metrobuilder-save.png "$STAGE/usr/share/icons/hicolor/256x256/mimetypes/application-x-metrobuilder-save.png"
 install -Dm644 README.md "$STAGE/usr/share/doc/metrobuilder/README.md"
 
 # dépendances des bibliothèques liées (Qt 6, PulseAudio…)

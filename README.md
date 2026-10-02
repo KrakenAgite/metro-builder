@@ -34,8 +34,12 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.0.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.1.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
+
+Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
+s'ouvrent dans Metro Builder par double-clic (`metrobuilder partie.metro` en ligne de commande). Sous Windows,
+l'association est enregistrée pour l'utilisateur au premier lancement de `metrobuilder.exe`.
 
 Les dépendances (Qt 6, PulseAudio, OpenSSL) sont calculées par `dpkg-shlibdeps` ; paquet prévu pour
 Debian 13 (trixie) ou une distribution aussi récente.

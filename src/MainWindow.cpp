@@ -2093,6 +2093,15 @@ void MainWindow::openGame(const QString &path)
     m_loader->loadCity(city, radius);
 }
 
+void MainWindow::openFile(const QString &path)
+{
+    if (!QFileInfo(path).isFile()) {
+        m_toast->show(tr("Fichier introuvable : %1").arg(path), true);
+        return;
+    }
+    openGame(QFileInfo(path).absoluteFilePath());
+}
+
 // Restaure vue, calque, vitesse et ligne sélectionnée d'une partie chargée
 void MainWindow::applyPendingView()
 {

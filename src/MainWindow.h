@@ -38,6 +38,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    void openFile(const QString &path); // partie .metro passée au lancement (double-clic sur une sauvegarde)
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

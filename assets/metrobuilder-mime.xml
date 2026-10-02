@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-metrobuilder-save">
+    <comment>Metro Builder saved game</comment>
+    <comment xml:lang="fr">Partie Metro Builder</comment>
+    <sub-class-of type="application/json"/>
+    <icon name="application-x-metrobuilder-save"/>
+    <glob pattern="*.metro"/>
+  </mime-type>
+</mime-info>
