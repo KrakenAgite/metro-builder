@@ -289,7 +289,8 @@ QJsonObject Metro::economyJson() const
                << std::round(it.value() * 1000) / 1000;
     }
     return QJsonObject{{"fare", m_fare},         {"maintenance", m_maintenance}, {"loans", loans},
-                       {"baseGrowth", m_baseGrowth}, {"growth", growth},         {"popYearStart", m_popYearStart}};
+                       {"baseGrowth", m_baseGrowth}, {"growth", growth},         {"popYearStart", m_popYearStart},
+                       {"popInitial", m_initialPopulation}};
 }
 
 void Metro::loadEconomy(const QJsonObject &o)
@@ -310,4 +311,5 @@ void Metro::loadEconomy(const QJsonObject &o)
         m_growth[key] = float(g[i + 2].toDouble());
     }
     m_popYearStart = o.value("popYearStart").toDouble(0);
+    m_initialPopulation = o.value("popInitial").toDouble(0);
 }

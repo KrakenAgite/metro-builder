@@ -212,6 +212,10 @@ void Metro::checkGoals()
 {
     if (m_checkingGoals || m_sandbox)
         return;
+    if (!m_mission.id.isEmpty() && m_mission.status == 0) { // scénario : seules comptent les conditions de victoire
+        checkMission();
+        return;
+    }
     m_checkingGoals = true;
     bool changed = false;
     if (m_goals.isEmpty() && m_goalsDone == 0 && m_goalLevel[0] == 0) {

@@ -17,6 +17,9 @@ class ChartWidget;
 class LineEconomicsWidget;
 class StopDelegate;
 class Toast;
+class TransitImporter;
+class Achievements;
+struct ScenarioDef;
 class QLineEdit;
 class QComboBox;
 class QPushButton;
@@ -59,6 +62,14 @@ private:
     void exportMapImage();
     void enterSandbox();
     void refreshUndo();
+    Card *buildScenarioCard();
+    Card *buildAchievementsCard();
+    Card *buildMissionEndCard();
+    void showScenarios();
+    void showAchievements();
+    void playScenario(const QString &id);
+    void onMissionFinished(bool won, int stars);
+    void importRealNetwork();
     void refreshGoals();
     void onGoalCompleted(const Objective &goal);
     QString bestScoreKey() const;
@@ -186,6 +197,18 @@ private:
     QAction *m_undoAction, *m_redoAction, *m_sandboxAction;
     QToolButton *m_modeCareer, *m_modeSandbox;
     bool m_newSandbox = false; // mode des nouvelles parties
+
+    // défis : scénarios, succès, réseau réel
+    TransitImporter *m_transit;
+    Achievements *m_achievements;
+    QString m_pendingScenario;
+    Card *m_scenarioCard, *m_achievementsCard, *m_missionEndCard;
+    QVBoxLayout *m_scenarioList, *m_achievementGrid;
+    QLabel *m_achievementsCount;
+    QLabel *m_endTitle, *m_endStars, *m_endText;
+    QHBoxLayout *m_endButtons;
+    QLabel *m_goalsSection;
+    bool m_hadDebt = false;
 
     // score et objectifs
     Card *m_goalsCard;

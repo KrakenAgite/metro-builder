@@ -5,6 +5,8 @@
 #include "Ui.h"
 #include "Charts.h"
 #include "Audio.h"
+#include "Achievements.h"
+#include "TransitImport.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -141,6 +143,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_metro(new Metro(this))
     , m_loader(new OsmLoader(this))
+    , m_transit(new TransitImporter(this))
+    , m_achievements(new Achievements(this))
 {
     setWindowTitle(tr("Metro Builder"));
     setWindowIcon(Icons::appIcon());
@@ -170,9 +174,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_financeCard = buildFinanceCard();
     m_goalsCard = buildGoalsCard();
     m_routeCard = buildRouteCard();
+    m_scenarioCard = buildScenarioCard();
+    m_achievementsCard = buildAchievementsCard();
+    m_missionEndCard = buildMissionEndCard();
     buildEventCards();
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_eventsCard, m_newsCard, m_decisionCard})
+                    m_routeCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard, m_newsCard,
+                    m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
     m_dock->hide();
@@ -181,12 +189,16 @@ MainWindow::MainWindow(QWidget *parent)
     m_financeCard->hide();
     m_goalsCard->hide();
     m_routeCard->hide();
+    m_scenarioCard->hide();
+    m_achievementsCard->hide();
+    m_missionEndCard->hide();
     m_eventsCard->hide();
     m_newsCard->hide();
     m_decisionCard->hide();
     m_toast = new Toast(m_root);
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_eventsCard, m_newsCard, m_decisionCard})
+                    m_routeCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard, m_newsCard,
+                    m_decisionCard})
         c->ensurePolished();
     // un clic sur le budget ouvre les finances
     m_moneyChip->installEventFilter(this);
@@ -229,6 +241,23 @@ MainWindow::MainWindow(QWidget *parent)
         layoutOverlays();
     });
     connect(m_metro, &Metro::undoChanged, this, &MainWindow::refreshUndo);
+    connect(m_metro, &Metro::missionFinished, this, &MainWindow::onMissionFinished);
+    connect(m_metro, &Metro::missionChanged, this, &MainWindow::refreshGoals);
+    connect(m_achievements, &Achievements::unlocked, this, [this](const Achievements::Def &d) {
+        m_toast->show(tr("Succès débloqué : %1 — %2").arg(d.title, d.description), false, true);
+        QTimer::singleShot(200, this, [] { Audio::instance().play(Audio::Good); });
+    });
+    connect(m_transit, &TransitImporter::progress, this, [this](const QString &msg) { m_toast->show(msg, false, true); });
+    connect(m_transit, &TransitImporter::failed, this, [this](const QString &msg) { m_toast->show(msg, true); });
+    connect(m_transit, &TransitImporter::finished, this, [this](const QVector<ImportedLine> &lines) {
+        m_metro->importNetwork(lines);
+        m_achievements->unlock("real");
+        Audio::instance().play(Audio::NewLine);
+        m_toast->show(tr("Métro réel importé : %1 lignes, %2 stations")
+                          .arg(m_metro->lines().size())
+                          .arg(m_metro->stations().size()));
+        refreshAll();
+    });
 
     connect(&m_autosaveTimer, &QTimer::timeout, this, &MainWindow::autosave);
     if (m_autosaveMinutes > 0)
@@ -297,6 +326,17 @@ Card *MainWindow::buildCityCard()
         QSettings().setValue("game/sandbox", on);
     });
     modeRow->addStretch();
+    auto *scenBtn = new QPushButton(Icons::icon(Icons::Target), tr("Scénarios"));
+    scenBtn->setProperty("variant", "ghost");
+    scenBtn->setCursor(Qt::PointingHandCursor);
+    scenBtn->setToolTip(tr("Missions sur de grandes capitales"));
+    connect(scenBtn, &QPushButton::clicked, this, &MainWindow::showScenarios);
+    modeRow->addWidget(scenBtn);
+    auto *achBtn = new QPushButton(Icons::icon(Icons::Trophy), tr("Succès"));
+    achBtn->setProperty("variant", "ghost");
+    achBtn->setCursor(Qt::PointingHandCursor);
+    connect(achBtn, &QPushButton::clicked, this, &MainWindow::showAchievements);
+    modeRow->addWidget(achBtn);
     wt->addLayout(modeRow);
     wl->addLayout(wt, 1);
     lay->addWidget(m_welcome);
@@ -388,6 +428,11 @@ Card *MainWindow::buildCityCard()
     menu->addAction(Icons::icon(Icons::Image), tr("Capture de la carte (PNG)…"), this, &MainWindow::exportMapImage);
     m_sandboxAction = menu->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
                                       &MainWindow::enterSandbox);
+    menu->addAction(Icons::icon(Icons::Download), tr("Importer le métro réel de la ville"), this,
+                    &MainWindow::importRealNetwork);
+    menu->addSeparator();
+    menu->addAction(Icons::icon(Icons::Target), tr("Scénarios…"), this, &MainWindow::showScenarios);
+    menu->addAction(Icons::icon(Icons::Trophy), tr("Succès…"), this, &MainWindow::showAchievements);
     menu->addSeparator();
     menu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"), m_map,
                     &MapView::fitCity);
@@ -859,8 +904,10 @@ Card *MainWindow::buildLineCard()
     m_renewBtn->setToolTip(tr("Remplacer tout le matériel de la ligne par du neuf (%1 % du prix)")
                                .arg(int(Rules::RenewShare * 100)));
     connect(m_renewBtn, &QPushButton::clicked, this, [this] {
-        if (m_metro->renewStock(m_currentLine))
+        if (m_metro->renewStock(m_currentLine)) {
             Audio::instance().play(Audio::Coins);
+            m_achievements->unlock("renew");
+        }
     });
     stockRow->addWidget(m_renewBtn);
     lay->addLayout(stockRow);
@@ -1227,7 +1274,8 @@ Card *MainWindow::buildGoalsCard()
     head->addWidget(close, 0, Qt::AlignTop);
     lay->addLayout(head);
 
-    lay->addWidget(section(tr("Objectifs")));
+    m_goalsSection = section(tr("Objectifs"));
+    lay->addWidget(m_goalsSection);
     for (int i = 0; i < 3; ++i) {
         GoalRow r;
         r.box = new QWidget;
@@ -1276,6 +1324,53 @@ void MainWindow::refreshGoals()
         return;
     m_scoreValue->setText(tr("%1 points").arg(count(score)));
     m_scoreSub->setText(tr("+%1 à la fin du mois · record %2").arg(count(m_metro->monthPoints())).arg(count(m_bestScore)));
+    const Mission &mission = m_metro->mission();
+    if (!mission.id.isEmpty()) { // scénario : conditions de victoire et échéance
+        const int left = m_metro->monthsLeft();
+        m_goalsSection->setText(tr("Mission · %1").arg(mission.cityLabel).toUpper());
+        for (int i = 0; i < m_goalRows.size(); ++i) {
+            GoalRow &r = m_goalRows[i];
+            r.box->setVisible(i < mission.goals.size());
+            if (i >= mission.goals.size())
+                continue;
+            const MissionGoal &g = mission.goals[i];
+            const double p = g.type == MissionGoal::NoSaturation
+                                 ? g.value
+                                 : std::clamp(g.target > 0 ? g.value / g.target : 0.0, 0.0, 1.0);
+            r.title->setText(g.title);
+            r.reward->setText(g.done() ? tr("✔ atteint") : QString());
+            r.bar->setValue(int(p * 1000));
+            r.bar->setStyleSheet(QStringLiteral("QProgressBar::chunk { background: %1; border-radius: 3px; }")
+                                     .arg((g.done() ? Theme::Success : Theme::Accent).name()));
+            if (g.type == MissionGoal::NoSaturation) {
+                int sat = 0;
+                for (const Line &l : m_metro->lines())
+                    sat += l.segmentCount() > 0 && l.loadRatio() > 1;
+                r.progress->setText(sat == 0 ? tr("aucune ligne saturée")
+                                    : sat == 1 ? tr("1 ligne saturée")
+                                               : tr("%1 lignes saturées").arg(sat));
+            } else {
+                Objective o;
+                o.kind = g.kind;
+                o.target = g.target;
+                o.value = g.value;
+                r.progress->setText(Metro::goalProgressText(o));
+            }
+        }
+        m_goalsFooter->setText(mission.status == 1 ? tr("Mission accomplie %1").arg(QString(mission.stars, QChar(0x2605)))
+                               : mission.status == 2 ? tr("Mission échouée : délai dépassé")
+                               : left > 1 ? tr("Temps restant : %1").arg(
+                                     [left] {
+                                         const int y = left / 12, mo = left % 12;
+                                         const QString ys = y == 1 ? QObject::tr("1 an") : QObject::tr("%1 ans").arg(y);
+                                         if (y == 0)
+                                             return QObject::tr("%1 mois").arg(mo);
+                                         return mo == 0 ? ys : QObject::tr("%1 et %2 mois").arg(ys).arg(mo);
+                                     }())
+                                          : tr("Dernier mois !"));
+        return;
+    }
+    m_goalsSection->setText(tr("Objectifs").toUpper());
     const auto &goals = m_metro->objectives();
     for (int i = 0; i < m_goalRows.size(); ++i) {
         GoalRow &r = m_goalRows[i];
@@ -1348,6 +1443,8 @@ void MainWindow::showRoute()
 {
     const Route r = m_metro->route(m_routeA, m_routeB);
     m_map->setRoute(r);
+    if (r.byMetro && r.walkMinutes >= 2 * r.minutes)
+        m_achievements->unlock("route");
     auto mins = [](double m) {
         const int n = std::max(1, int(std::round(m)));
         return n >= 60 ? QObject::tr("%1 h %2").arg(n / 60).arg(n % 60, 2, 10, QLatin1Char('0'))
@@ -1434,8 +1531,10 @@ void MainWindow::exportPlan()
         return;
     if (!path.endsWith(".png", Qt::CaseInsensitive) && !path.endsWith(".pdf", Qt::CaseInsensitive))
         path += ".png";
-    if (m_map->exportPlan(path, tr("Métro de %1").arg(m_metro->city()->name)))
+    if (m_map->exportPlan(path, tr("Métro de %1").arg(m_metro->city()->name))) {
         m_toast->show(tr("Plan exporté : %1").arg(QFileInfo(path).fileName()));
+        m_achievements->unlock("export");
+    }
     else
         m_toast->show(tr("Impossible d'écrire %1").arg(QFileInfo(path).fileName()), true);
 }
@@ -1479,6 +1578,300 @@ void MainWindow::refreshUndo()
     m_undoAction->setEnabled(city && m_metro->canUndo());
     m_redoAction->setEnabled(city && m_metro->canRedo());
     m_sandboxAction->setEnabled(city && !m_metro->sandbox());
+}
+
+// ---------------------------------------------------------------------------
+// Défis : scénarios, succès, réseau réel
+// ---------------------------------------------------------------------------
+
+namespace {
+
+QString starsText(int stars, int of = 3)
+{
+    return QString(stars, QChar(0x2605)) + QString(of - stars, QChar(0x2606));
+}
+
+// panneau centré défilant avec un en-tête (icône, titre, fermer)
+QVBoxLayout *centeredPanel(Card *card, Icons::Id icon, const QString &title, QLabel **subtitle,
+                           const std::function<void()> &onClose)
+{
+    QWidget *content = scrollableContent(card);
+    auto *lay = static_cast<QVBoxLayout *>(content->layout());
+    lay->setSpacing(10);
+    auto *head = new QHBoxLayout;
+    auto *ic = new QLabel;
+    ic->setPixmap(Icons::pixmap(icon, 24, QColor("#F5C542")));
+    head->addWidget(ic);
+    auto *t = new QLabel(title);
+    t->setStyleSheet("font-size: 14pt; font-weight: 700;");
+    head->addWidget(t);
+    if (subtitle) {
+        *subtitle = new QLabel;
+        (*subtitle)->setProperty("role", "subtitle");
+        head->addWidget(*subtitle);
+    }
+    head->addStretch();
+    auto *close = iconButton(Icons::Close, QObject::tr("Fermer"), false, 32);
+    QObject::connect(close, &QToolButton::clicked, card, onClose);
+    head->addWidget(close);
+    lay->addLayout(head);
+    return lay;
+}
+
+} // namespace
+
+Card *MainWindow::buildScenarioCard()
+{
+    auto *card = new Card(nullptr, 18);
+    QVBoxLayout *lay = centeredPanel(card, Icons::Target, tr("Scénarios"), nullptr, [this] { m_scenarioCard->hide(); });
+    auto *intro = new QLabel(tr("Une ville, un budget, une échéance : remplissez toutes les conditions avant la fin. "
+                                "Plus vous allez vite, plus vous gagnez d'étoiles."));
+    intro->setWordWrap(true);
+    intro->setProperty("role", "subtitle");
+    lay->addWidget(intro);
+    m_scenarioList = new QVBoxLayout;
+    m_scenarioList->setSpacing(8);
+    lay->addLayout(m_scenarioList);
+    return card;
+}
+
+void MainWindow::showScenarios()
+{
+    clearLayout(m_scenarioList);
+    const auto loc = QLocale(QLocale::French);
+    for (const ScenarioDef &d : Metro::scenarios()) {
+        auto *row = new QWidget;
+        row->setObjectName("scenarioRow");
+        row->setAttribute(Qt::WA_StyledBackground, true);
+        row->setStyleSheet("#scenarioRow { background: rgba(255,255,255,0.05); border-radius: 12px; }");
+        auto *rl = new QHBoxLayout(row);
+        rl->setContentsMargins(14, 10, 10, 10);
+        rl->setSpacing(14);
+        auto *col = new QVBoxLayout;
+        col->setSpacing(3);
+        const int best = QSettings().value(QStringLiteral("scenarios/%1").arg(d.id), 0).toInt();
+        auto *title = new QLabel(QStringLiteral("<b>%1</b> &nbsp;<span style='color:#F5C542'>%2</span>")
+                                     .arg(d.title.toHtmlEscaped(), best > 0 ? starsText(best) : QString()));
+        title->setStyleSheet("font-size: 11pt;");
+        col->addWidget(title);
+        auto *desc = new QLabel(d.description);
+        desc->setWordWrap(true);
+        desc->setProperty("role", "subtitle");
+        col->addWidget(desc);
+        QStringList goals;
+        for (const MissionGoal &g : d.goals) {
+            const int t = qRound(g.type == MissionGoal::RidersShare ? g.target * 100 : g.target);
+            switch (g.type) {
+            case MissionGoal::NoSaturation: goals << tr("aucune ligne saturée"); break;
+            case MissionGoal::RidersShare: goals << tr("transporter %1 % de la demande").arg(t); break;
+            case MissionGoal::Metric:
+                switch (g.kind) {
+                case GoalKind::Capture: goals << tr("capter %1 %").arg(t); break;
+                case GoalKind::Coverage: goals << tr("desservir %1 % des habitants").arg(t); break;
+                case GoalKind::ProfitStreak: goals << tr("%1 mois bénéficiaires d'affilée").arg(t); break;
+                case GoalKind::Transfers: goals << tr("%1 correspondances").arg(t); break;
+                case GoalKind::Stations: goals << tr("%1 stations").arg(t); break;
+                case GoalKind::Lines: goals << tr("%1 lignes").arg(t); break;
+                default: goals << QString::number(t); break;
+                }
+                break;
+            }
+        }
+        auto *meta = new QLabel(tr("Difficulté <span style='color:#F5C542'>%1</span> · budget %2 · %3 ans · zone de %4 km%5<br>"
+                                   "Objectifs : %6")
+                                    .arg(starsText(d.difficulty), money(d.money), loc.toString(d.months / 12.0),
+                                         loc.toString(d.radiusKm * 2),
+                                         d.realNetwork ? tr(" · métro réel au départ") : QString(), goals.join(", ")));
+        meta->setWordWrap(true);
+        meta->setProperty("role", "status");
+        col->addWidget(meta);
+        rl->addLayout(col, 1);
+        auto *play = new QPushButton(Icons::icon(Icons::Play, Qt::white, Qt::white), tr("Jouer"));
+        play->setProperty("variant", "primary");
+        play->setCursor(Qt::PointingHandCursor);
+        const QString id = d.id;
+        connect(play, &QPushButton::clicked, this, [this, id] { playScenario(id); });
+        rl->addWidget(play, 0, Qt::AlignVCenter);
+        m_scenarioList->addWidget(row);
+    }
+    m_achievementsCard->hide();
+    m_scenarioCard->show();
+    m_scenarioCard->raise();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+void MainWindow::playScenario(const QString &id)
+{
+    const ScenarioDef *def = Metro::scenario(id);
+    if (!def || m_loader->busy())
+        return;
+    if (!m_metro->stations().isEmpty() && m_metro->mission().id.isEmpty() // en mission : « Réessayer » sans question
+        && QMessageBox::question(this, tr("Nouveau scénario"),
+                                 tr("Lancer ce scénario remplace la partie en cours. Continuer ?"))
+               != QMessageBox::Yes)
+        return;
+    m_scenarioCard->hide();
+    m_missionEndCard->hide();
+    m_pendingScenario = id;
+    m_cityQuery = def->city;
+    m_cityRadius = def->radiusKm;
+    m_cityEdit->setText(def->city);
+    const int idx = m_radiusCombo->findData(def->radiusKm);
+    if (idx >= 0)
+        m_radiusCombo->setCurrentIndex(idx);
+    m_pendingArea = QRectF();
+    m_pendingView = {};
+    m_pendingGame = {};
+    m_savePath.clear();
+    m_loader->loadCity(def->city, def->radiusKm);
+}
+
+Card *MainWindow::buildAchievementsCard()
+{
+    auto *card = new Card(nullptr, 18);
+    QVBoxLayout *lay = centeredPanel(card, Icons::Trophy, tr("Succès"), &m_achievementsCount,
+                                     [this] { m_achievementsCard->hide(); });
+    m_achievementGrid = new QVBoxLayout;
+    lay->addLayout(m_achievementGrid);
+    return card;
+}
+
+void MainWindow::showAchievements()
+{
+    clearLayout(m_achievementGrid);
+    auto *gridWidget = new QWidget;
+    auto *grid = new QGridLayout(gridWidget);
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setSpacing(8);
+    const auto &defs = Achievements::all();
+    for (int i = 0; i < defs.size(); ++i) {
+        const auto &d = defs[i];
+        const bool got = m_achievements->has(d.id);
+        auto *tile = new QWidget;
+        tile->setObjectName("achTile");
+        tile->setAttribute(Qt::WA_StyledBackground, true);
+        tile->setStyleSheet(got ? "#achTile { background: rgba(245,197,66,0.10); border-radius: 12px; }"
+                                : "#achTile { background: rgba(255,255,255,0.04); border-radius: 12px; }");
+        auto *tl = new QHBoxLayout(tile);
+        tl->setContentsMargins(12, 10, 12, 10);
+        tl->setSpacing(12);
+        auto *ic = new QLabel;
+        ic->setPixmap(Icons::pixmap(Icons::Trophy, 26, got ? QColor("#F5C542") : QColor(255, 255, 255, 60)));
+        tl->addWidget(ic, 0, Qt::AlignTop);
+        auto *col = new QVBoxLayout;
+        col->setSpacing(2);
+        auto *t = new QLabel(d.title);
+        t->setStyleSheet(got ? "font-weight: 700;" : "font-weight: 700; color: #7D8597;");
+        col->addWidget(t);
+        auto *desc = caption(got ? tr("%1 · %2").arg(d.description,
+                                                       QLocale(QLocale::French).toString(m_achievements->when(d.id).date(),
+                                                                                         QLocale::ShortFormat))
+                                 : d.description);
+        desc->setWordWrap(true);
+        col->addWidget(desc);
+        tl->addLayout(col, 1);
+        grid->addWidget(tile, i / 2, i % 2);
+    }
+    m_achievementGrid->addWidget(gridWidget);
+    m_achievementsCount->setText(tr("%1 / %2").arg(m_achievements->count()).arg(defs.size()));
+    m_scenarioCard->hide();
+    m_achievementsCard->show();
+    m_achievementsCard->raise();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+Card *MainWindow::buildMissionEndCard()
+{
+    auto *card = new Card(nullptr, 18);
+    auto *lay = new QVBoxLayout(card);
+    lay->setContentsMargins(Card::Shadow + 22, Card::Shadow + 18, Card::Shadow + 22, Card::Shadow + 18);
+    lay->setSpacing(10);
+    m_endStars = new QLabel;
+    m_endStars->setAlignment(Qt::AlignCenter);
+    m_endStars->setStyleSheet("font-size: 30pt; color: #F5C542;");
+    lay->addWidget(m_endStars);
+    m_endTitle = new QLabel;
+    m_endTitle->setAlignment(Qt::AlignCenter);
+    m_endTitle->setStyleSheet("font-size: 15pt; font-weight: 700;");
+    lay->addWidget(m_endTitle);
+    m_endText = new QLabel;
+    m_endText->setAlignment(Qt::AlignCenter);
+    m_endText->setWordWrap(true);
+    m_endText->setProperty("role", "subtitle");
+    lay->addWidget(m_endText);
+    m_endButtons = new QHBoxLayout;
+    m_endButtons->setSpacing(8);
+    lay->addLayout(m_endButtons);
+    return card;
+}
+
+void MainWindow::onMissionFinished(bool won, int stars)
+{
+    const Mission &m = m_metro->mission();
+    clearLayout(m_endButtons);
+    auto button = [this](const QString &text, bool primary, std::function<void()> fn) {
+        auto *b = new QPushButton(text);
+        b->setProperty("variant", primary ? "primary" : "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        connect(b, &QPushButton::clicked, this, [this, fn] {
+            m_missionEndCard->hide();
+            fn();
+        });
+        m_endButtons->addWidget(b);
+    };
+    m_endButtons->addStretch();
+    const QString id = m.id;
+    if (won) {
+        const QString key = QStringLiteral("scenarios/%1").arg(id);
+        QSettings settings;
+        if (stars > settings.value(key, 0).toInt())
+            settings.setValue(key, stars);
+        m_achievements->unlock("scenario");
+        if (stars >= 3)
+            m_achievements->unlock("scenario3");
+        bool all = true;
+        for (const ScenarioDef &d : Metro::scenarios())
+            all &= settings.value(QStringLiteral("scenarios/%1").arg(d.id), 0).toInt() > 0;
+        if (all)
+            m_achievements->unlock("allcapitals");
+        m_endStars->setText(starsText(stars));
+        m_endTitle->setText(tr("Mission accomplie !"));
+        m_endText->setText(tr("%1 : réussi en %2 mois sur %3. Vous pouvez continuer à développer le réseau librement.")
+                               .arg(m.title)
+                               .arg(m_metro->month() - m.startMonth + 1)
+                               .arg(m.deadline - m.startMonth + 1));
+        button(tr("Autres scénarios"), false, [this] { showScenarios(); });
+        button(tr("Continuer à jouer"), true, [] {});
+        Audio::instance().play(Audio::NewLine);
+        QTimer::singleShot(600, this, [] { Audio::instance().play(Audio::Coins); });
+    } else {
+        m_endStars->setText(starsText(0));
+        m_endTitle->setText(tr("Mission échouée"));
+        m_endText->setText(tr("Le délai de « %1 » est dépassé. Réessayez, ou continuez cette partie librement.").arg(m.title));
+        button(tr("Continuer librement"), false, [] {});
+        button(tr("Réessayer"), true, [this, id] { playScenario(id); });
+        Audio::instance().play(Audio::Bad);
+    }
+    m_speedGroup->button(0)->click(); // pause
+    m_missionEndCard->show();
+    refreshGoals();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+void MainWindow::importRealNetwork()
+{
+    if (!m_metro->city() || m_transit->busy())
+        return;
+    if (QMessageBox::question(this, tr("Métro réel"),
+                              tr("Importer les lignes de métro réelles de %1 depuis OpenStreetMap ?\n\n"
+                                 "Le réseau actuel est remplacé ; les stations et lignes importées sont offertes.")
+                                  .arg(m_metro->city()->name))
+        != QMessageBox::Yes)
+        return;
+    m_transit->fetch(m_metro->city());
 }
 
 // ---------------------------------------------------------------------------
@@ -1898,6 +2291,25 @@ void MainWindow::layoutOverlays()
         m_financeCard->move((W - w) / 2, top);
     }
 
+    for (Card *c : {m_scenarioCard, m_achievementsCard})
+        if (c->isVisible()) {
+            const int w = std::min(c == m_scenarioCard ? 760 : 820, W - 2 * kMargin);
+            c->setFixedWidth(w);
+            auto *area = c->findChild<QScrollArea *>();
+            const QMargins m = c->layout()->contentsMargins() + c->contentsMargins();
+            const int wantedH = area && area->widget()
+                                    ? area->widget()->heightForWidth(w - m.left() - m.right()) + m.top() + m.bottom() + 4
+                                    : c->sizeHint().height();
+            const int h = std::min(std::max(wantedH, 200), H - 2 * kMargin);
+            c->resize(w, h);
+            c->move((W - w) / 2, (H - h) / 2);
+        }
+    if (m_missionEndCard->isVisible()) {
+        const int w = std::min(520, W - 2 * kMargin);
+        m_missionEndCard->setFixedWidth(w);
+        m_missionEndCard->adjustSize();
+        m_missionEndCard->move((W - w) / 2, (H - m_missionEndCard->height()) / 2 - 30);
+    }
     if (m_newsCard->isVisible()) {
         const int w = std::min(500, W - 2 * kMargin);
         m_newsCard->setFixedWidth(w);
@@ -1921,7 +2333,9 @@ void MainWindow::layoutOverlays()
                        static_cast<QWidget *>(m_routeCard),
                        static_cast<QWidget *>(m_financeCard),
                        static_cast<QWidget *>(m_eventsCard), static_cast<QWidget *>(m_newsCard),
-                       static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_toast)})
+                       static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_scenarioCard),
+                       static_cast<QWidget *>(m_achievementsCard), static_cast<QWidget *>(m_missionEndCard),
+                       static_cast<QWidget *>(m_toast)})
         w->raise();
 }
 
@@ -1972,6 +2386,29 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     }
     m_routeActive = false;
     m_routeCard->hide();
+    m_missionEndCard->hide();
+    if (!m_pendingScenario.isEmpty()) {
+        if (const ScenarioDef *def = Metro::scenario(m_pendingScenario)) {
+            m_metro->startScenario(*def);
+            if (def->realNetwork)
+                m_transit->fetch(city);
+            QTimer::singleShot(400, this, [this, def] {
+                m_newsIcon->setPixmap(Icons::pixmap(Icons::Target, 30, QColor("#F5C542")));
+                m_newsTitle->setText(def->title);
+                QStringList goals;
+                for (const MissionGoal &g : m_metro->mission().goals)
+                    goals << QStringLiteral("• %1").arg(g.title);
+                m_newsText->setText(tr("%1<br><br><b>Objectifs en %2 ans :</b><br>%3")
+                                        .arg(def->description)
+                                        .arg(QLocale(QLocale::French).toString(def->months / 12.0))
+                                        .arg(goals.join("<br>")));
+                m_newsCard->show();
+                m_newsTimer.start(15000);
+                layoutOverlays();
+            });
+        }
+        m_pendingScenario.clear();
+    }
     // partie sauvegardée sur une zone agrandie : on la reconstitue
     if (m_pendingArea.isValid() && m_pendingArea != city->area)
         QTimer::singleShot(0, this, [this, city] {
@@ -2055,6 +2492,12 @@ void MainWindow::tick()
         }
         if (m_frame % 15 == 0)
             refreshFinance();
+        if (m_frame % 30 == 0) {
+            m_achievements->check(*m_metro);
+            if (m_hadDebt && m_metro->debt() <= 0)
+                m_achievements->unlock("debtfree");
+            m_hadDebt = m_metro->debt() > 0;
+        }
     }
 }
 
@@ -2665,6 +3108,8 @@ void MainWindow::showHelp()
                    "<p><b>Gestion</b> (Finances, B) : prix du ticket, niveau d'entretien, emprunts ; la ville subventionne "
                    "un métro qui capte bien la demande. Dans chaque ligne : rames aux heures creuses, âge du matériel "
                    "et renouvellement. Les quartiers bien desservis se densifient au fil des ans.</p>"
+                   "<p><b>Défis</b> : scénarios sur six grandes villes (accueil ou ☰), import du métro réel (☰), "
+                   "et succès à débloquer.</p>"
                    "<p><b>Agrandir la carte</b> : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.</p>"
                    "<p>Calque <b>demande</b> : rouge = déplacements non desservis, vert = captés par le métro.</p>"
                    "<p style='color:#9AA0A6'>Données © contributeurs OpenStreetMap (ODbL) · "

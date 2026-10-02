@@ -67,6 +67,7 @@ void Metro::updateCity(QSharedPointer<CityData> city)
     const double before = m_population;
     buildGrid();
     m_popYearStart += m_population - before; // habitants de la zone ajoutée : pas de la croissance
+    m_initialPopulation += m_population - before;
     recompute();
 }
 
@@ -98,6 +99,8 @@ void Metro::reset()
     m_baseGrowth = 1;
     m_growth.clear();
     m_popYearStart = 0;
+    m_initialPopulation = 0;
+    m_mission = Mission();
     buildGrid();
     recompute();
     resetUndo();
@@ -132,6 +135,8 @@ void Metro::buildGrid()
     applyGrowth();
     if (m_popYearStart <= 0)
         m_popYearStart = m_population;
+    if (m_initialPopulation <= 0)
+        m_initialPopulation = m_population;
     for (int i = 0; i < n; ++i)
         m_grid.potential[i] = m_grid.pop[i] * Rules::TripRateResident + m_grid.jobs[i] * Rules::TripRateJob;
 }
@@ -1156,7 +1161,7 @@ void Metro::advance(double realSeconds, double speed)
 
 void Metro::charge(double amount)
 {
-    if (m_sandbox) // bac à sable : construction gratuite
+    if (m_sandbox || m_freeBuild) // bac à sable ou réseau réel importé : rien n'est facturé
         return;
     m_money -= amount;
     m_current.investment += amount;
@@ -1309,7 +1314,8 @@ QJsonObject Metro::save() const
                        {"events", eventsJson()},
                        {"goals", goalsJson()},
                        {"sandbox", m_sandbox},
-                       {"economy", economyJson()}};
+                       {"economy", economyJson()},
+                       {"mission", missionJson()}};
     for (auto it = rest.begin(); it != rest.end(); ++it)
         o.insert(it.key(), it.value());
     return o;
@@ -1410,6 +1416,7 @@ bool Metro::load(const QJsonObject &o)
     loadEvents(o);
     loadGoals(o.value("goals").toObject()); // absent (ancienne sauvegarde) : objectifs repris du début
     loadEconomy(o.value("economy").toObject());
+    loadMission(o.value("mission").toObject());
     buildGrid(); // croissance urbaine sauvegardée
     // anciennes sauvegardes sans historique : on repart du mois en cours
     m_financeSeconds = std::max(m_financeSeconds, m_history.size() * Rules::SecondsPerMonth);

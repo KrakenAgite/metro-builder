@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CityData.h"
+#include "TransitImport.h"
 #include <QColor>
 #include <QHash>
 #include <QPolygonF>
@@ -226,6 +227,36 @@ struct Route {
     QVector<QPair<QColor, QPolygonF>> drawing; // tracé à surligner (couleur, polyligne monde) ; gris = marche
 };
 
+// Scénarios : une mission sur une grande ville, des conditions de victoire et une échéance
+struct MissionGoal {
+    enum Type { Metric, RidersShare, NoSaturation } type = Metric;
+    GoalKind kind = GoalKind::Riders; // Metric
+    double target = 0;   // Metric : valeur à atteindre ; RidersShare : part de la demande (fixée au départ)
+    double value = 0;    // valeur actuelle
+    QString title;
+    bool done() const { return type == NoSaturation ? value > 0.5 : value + 1e-9 >= target; }
+};
+
+struct ScenarioDef {
+    QString id, city, cityLabel, title, description;
+    double radiusKm = 2;
+    double money = 600;
+    bool realNetwork = false; // démarre avec le métro réel de la ville (OpenStreetMap)
+    int months = 48;
+    int difficulty = 1;       // 1 à 3
+    QVector<MissionGoal> goals;
+};
+
+struct Mission {
+    QString id; // vide : partie libre
+    QString title, cityLabel;
+    int startMonth = 1, deadline = 0; // dernier mois inclus
+    QVector<MissionGoal> goals;
+    int status = 0; // 0 en cours, 1 réussie, 2 échouée
+    int stars = 0;
+    bool active() const { return !id.isEmpty() && status == 0; }
+};
+
 // Bilan d'un mois de jeu (montants en M€)
 struct MonthRecord {
     int month = 0;
@@ -371,6 +402,15 @@ public:
     double renewCost(const Line &l) const;     // M€
     bool renewStock(int lineId);
 
+    // Scénarios et import du réseau réel
+    static const QVector<ScenarioDef> &scenarios();
+    static const ScenarioDef *scenario(const QString &id);
+    void startScenario(const ScenarioDef &def);
+    const Mission &mission() const { return m_mission; }
+    int monthsLeft() const { return m_mission.deadline - month() + 1; }
+    void importNetwork(const QVector<ImportedLine> &lines); // remplace le réseau, sans frais
+    double initialPopulation() const { return m_initialPopulation; }
+
     // Annuler / refaire : chaque modification du réseau est mémorisée ; annuler rembourse la construction
     bool canUndo() const { return !m_undo.isEmpty(); }
     bool canRedo() const { return !m_redo.isEmpty(); }
@@ -393,6 +433,8 @@ signals:
     void goalCompleted(const Objective &goal);
     void goalsChanged();
     void undoChanged();
+    void missionChanged();
+    void missionFinished(bool won, int stars);
 
 private:
     Station *stationMut(int id);
@@ -412,6 +454,9 @@ private:
     void loadEvents(const QJsonObject &o);
     void closeMonth();
     void monthlyEconomy(); // fin de mois : emprunts, vieillissement, croissance urbaine
+    void checkMission();
+    QJsonObject missionJson() const;
+    void loadMission(const QJsonObject &o);
     void growCity();
     void applyGrowth();
     double maintenanceCostFactor() const;
@@ -477,6 +522,9 @@ private:
     double m_population = 0, m_popYearStart = 0;
     double m_baseGrowth = 1;            // croissance naturelle de toute la ville
     QHash<qint64, float> m_growth;      // croissance autour des stations, par cellule (clé : coordonnées /100 m)
+    double m_initialPopulation = 0;
+    Mission m_mission;
+    bool m_freeBuild = false;           // import du réseau réel : rien n'est facturé
     struct UndoState {
         QJsonObject net;
         double invested = 0;

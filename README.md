@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.3.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.4.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -125,6 +125,20 @@ L'interface est une carte plein écran avec des panneaux flottants :
 15. **Ville qui évolue** : chaque mois les quartiers desservis se densifient (jusqu'à +0,5 %/mois là où le métro
     capte bien la demande, plafonné à 2,5 fois la densité d'origine) et toute la ville croît lentement ;
     bilan démographique chaque année et courbe de population dans les Finances.
+
+**Défis**
+- **Scénarios** (écran d'accueil ou ☰ → Scénarios) : six missions sur de grandes villes — Paris (avec le vrai
+  métro au départ), Londres, Berlin, Madrid, Manhattan et Shinjuku. Chacune fixe un budget, une échéance et des
+  conditions de victoire (voyageurs transportés, habitants desservis, demande captée, correspondances, mois
+  bénéficiaires, aucune ligne saturée…). Les objectifs de voyageurs sont proportionnels à la demande de la ville.
+  Réussite en moins de la moitié du temps : 3 étoiles, des trois quarts : 2, sinon 1 ; le meilleur résultat
+  est conservé. La mission s'affiche à la place des objectifs (bouton trophée).
+- **Métro réel** (☰ → Importer le métro réel) : lignes `route=subway` d'OpenStreetMap via Overpass (mises en
+  cache), arrêts dans la zone de jeu regroupés par nom en stations de correspondance, couleurs ramenées à la
+  palette du jeu. Le réseau importé remplace le réseau actuel et n'est pas facturé.
+- **Succès** (accueil ou ☰ → Succès) : 22 succès conservés d'une partie à l'autre (première ligne, ligne
+  circulaire, station à 4 lignes, 10 000 voyageurs/h, 90 % des habitants desservis, 2 000 M€, dette remboursée,
+  dix ans de jeu, scénarios en 3 étoiles, tour du monde des capitales…).
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des
