@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.8.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.8.1_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -60,7 +60,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
 | Haut gauche | Recherche de ville, rayon, chargement, menu ☰ (fichier Overpass, sauvegarde, aide) |
 | Haut droite | Indicateurs : budget et bilan mensuel, date, voyageurs/h, demande captée, habitants desservis |
 | Bas à gauche | **Outils** (icône de l'outil actif) · **Lignes** (pastille de la ligne choisie ; le volet liste toutes les lignes et en crée de nouvelles) |
-| Bas à droite | **Calques** · **Vitesse** · **Affichage** (carte sombre, plan schématique, objectifs, finances, son) — chaque icône déroule ses choix |
+| Bas à droite | **Calques** · **Vitesse** · **Affichage** (carte sombre, plan schématique, objectifs, finances, son) — chaque icône déroule ses choix en colonne, juste au-dessus d'elle |
 | Bas gauche | Éditeur de la ligne sélectionnée (arrêts façon plan de ligne, voitures, rames, boucle, indicateurs) |
 | Droite | Fiche de la station sélectionnée |
 

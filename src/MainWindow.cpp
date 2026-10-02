@@ -696,9 +696,13 @@ QWidget *flyout(QToolButton *anchor, QMenu **menuOut = nullptr)
     auto *action = new QWidgetAction(menu);
     action->setDefaultWidget(content);
     menu->addAction(action);
-    anchor->setMenu(menu);
-    anchor->setPopupMode(QToolButton::InstantPopup);
-    anchor->setStyleSheet(anchor->styleSheet() + "QToolButton::menu-indicator { image: none; width: 0; }");
+    // le volet s'ouvre juste au-dessus de son bouton, centré sur lui
+    QObject::connect(anchor, &QToolButton::clicked, menu, [anchor, menu] {
+        menu->adjustSize();
+        const QSize sz = menu->sizeHint();
+        menu->popup(anchor->mapToGlobal(QPoint((anchor->width() - sz.width()) / 2, -sz.height() - 6)));
+    });
+    anchor->setProperty("flyout", QVariant::fromValue(static_cast<QObject *>(menu)));
     if (menuOut)
         *menuOut = menu;
     return content;
@@ -741,8 +745,8 @@ Card *MainWindow::buildDock()
         lay->setSpacing(6);
         return card;
     };
-    auto rowOf = [](QWidget *content) {
-        auto *row = new QHBoxLayout(content);
+    auto rowOf = [](QWidget *content) { // volet vertical : une colonne d'icônes
+        auto *row = new QVBoxLayout(content);
         row->setContentsMargins(6, 6, 6, 6);
         row->setSpacing(4);
         return row;
@@ -789,8 +793,7 @@ Card *MainWindow::buildDock()
     // l'outil actif est toujours visible : bouton en couleur d'accent
     m_toolsBtn->setObjectName("toolsGroup"); // style limité à ce bouton (pas aux outils du volet)
     m_toolsBtn->setStyleSheet("#toolsGroup { background: #4C8DFF; border-radius: 12px; }"
-                              "#toolsGroup:hover { background: #6A9FFF; }"
-                              "#toolsGroup::menu-indicator { image: none; width: 0; }");
+                              "#toolsGroup:hover { background: #6A9FFF; }");
     leftLay->addWidget(m_toolsBtn);
 
     // Lignes : pastille de la ligne choisie ; le volet montre toutes les lignes et la création
@@ -804,7 +807,7 @@ Card *MainWindow::buildDock()
     m_badgeLayout = new QGridLayout(m_badgeBox);
     m_badgeLayout->setContentsMargins(0, 0, 0, 0);
     m_badgeLayout->setSpacing(4);
-    linesCol->addWidget(m_badgeBox);
+    linesCol->addWidget(m_badgeBox, 0, Qt::AlignHCenter);
     auto *addRow = new QVBoxLayout;
     addRow->setSpacing(4);
     auto *addNumber = new QPushButton(Icons::icon(Icons::Plus), {});
@@ -817,12 +820,8 @@ Card *MainWindow::buildDock()
     }
     connect(addNumber, &QPushButton::clicked, this, [this] { newLine(false); });
     connect(addLetter, &QPushButton::clicked, this, [this] { newLine(true); });
-    connect(m_linesMenu, &QMenu::aboutToShow, this, [this, addNumber, addLetter] {
-        const QString n = m_metro->nextFreeCode(false), l = m_metro->nextFreeCode(true);
-        addNumber->setText(tr("Nouvelle ligne %1").arg(n));
-        addLetter->setText(l.isEmpty() ? tr("Plus de lettre disponible") : tr("Nouvelle ligne %1").arg(l));
-        addLetter->setEnabled(!l.isEmpty());
-    });
+    addNumber->setObjectName("addNumber"); // libellés tenus à jour par refreshLines (taille du volet juste)
+    addLetter->setObjectName("addLetter");
     linesCol->addLayout(addRow);
     leftLay->addWidget(m_linesBtn);
     m_addLineBtn = m_linesBtn;
@@ -3152,7 +3151,8 @@ void MainWindow::refreshStats()
 void MainWindow::refreshLines()
 {
     clearLayout(m_badgeLayout);
-    const int columns = std::clamp(int(std::ceil(std::sqrt(double(m_metro->lines().size())))), 4, 8);
+    // volet vertical : une colonne de pastilles, une colonne de plus toutes les 10 lignes
+    const int perColumn = 10;
     int i = 0;
     for (const Line &l : m_metro->lines()) {
         // pas d'alerte « saturée » pour une ligne à l'arrêt (grève) : elle n'a simplement plus de capacité
@@ -3168,10 +3168,17 @@ void MainWindow::refreshLines()
             m_linesMenu->close();
             selectLine(id == m_currentLine ? -1 : id);
         });
-        m_badgeLayout->addWidget(b, i / columns, i % columns);
+        m_badgeLayout->addWidget(b, i % perColumn, i / perColumn);
         ++i;
     }
     m_badgeBox->setVisible(i > 0);
+    if (auto *addNumber = m_linesMenu->findChild<QPushButton *>("addNumber"))
+        addNumber->setText(tr("Nouvelle ligne %1").arg(m_metro->nextFreeCode(false)));
+    if (auto *addLetter = m_linesMenu->findChild<QPushButton *>("addLetter")) {
+        const QString l = m_metro->nextFreeCode(true);
+        addLetter->setText(l.isEmpty() ? tr("Plus de lettre disponible") : tr("Nouvelle ligne %1").arg(l));
+        addLetter->setEnabled(!l.isEmpty());
+    }
     // bouton du groupe : pastille de la ligne choisie, sinon icône générique
     if (const Line *cur = m_metro->line(m_currentLine)) {
         m_linesBtn->setIcon(lineIcon(cur->code, cur->color));
