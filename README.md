@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.1.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.2.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -104,6 +104,15 @@ L'interface est une carte plein écran avec des panneaux flottants :
    à 0°/45°/90°, inter-stations régulières sur une grille, correspondances marquées, noms placés sans chevaucher
    les tracés, légende des lignes et rames animées. On peut y sélectionner, tracer avec des stations existantes
    ou démolir ; la construction de nouvelles stations se fait sur la carte.
+   **Exporter le plan** (☰ ou **Ctrl+E**) : PNG haute définition ou PDF A3 paysage, avec titre et légende ;
+   ☰ → Capture de la carte enregistre la vue géographique.
+10. **Itinéraire (5)** : cliquez un départ puis une arrivée : meilleur trajet (marche jusqu'à la station, attente,
+    lignes, correspondances, marche finale) surligné sur la carte, durée comparée à la marche. Il se recalcule
+    quand le réseau change ; clic droit pour l'effacer.
+11. **Annuler / rétablir** (**Ctrl+Z** / **Ctrl+Y**, ou ☰) : toute modification du réseau (stations, lignes,
+    arrêts, rames, tracés, noms, couleurs) ; la construction annulée est intégralement remboursée.
+12. **Bac à sable** : à choisir sur l'écran d'accueil (« Carrière » / « Bac à sable ») ou ☰ pour la partie en
+    cours (sans retour) : construction gratuite, ni événements ni score ; le mode est enregistré dans la sauvegarde.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

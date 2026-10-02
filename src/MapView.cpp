@@ -1,4 +1,6 @@
 #include "MapView.h"
+
+#include <QPdfWriter>
 #include "Metro.h"
 #include "Schematic.h"
 #include "Audio.h"
@@ -157,8 +159,124 @@ void MapView::setExtendBusy(bool busy)
 
 void MapView::setTool(Tool tool)
 {
+    if (m_tool == RouteTool && tool != RouteTool)
+        clearRoute();
     m_tool = tool;
     update();
+}
+
+void MapView::setRoute(const Route &route)
+{
+    m_route = route;
+    m_hasRouteFrom = false;
+    update();
+}
+
+void MapView::clearRoute()
+{
+    const bool had = m_route.valid || m_hasRouteFrom;
+    m_route = Route();
+    m_hasRouteFrom = false;
+    update();
+    if (had)
+        emit routeCleared();
+}
+
+// Itinéraire : marche en pointillés, trajets en métro surlignés, départ A et arrivée B
+void MapView::drawRoute(QPainter &p)
+{
+    auto marker = [&](const QPointF &world, const QColor &c, const QString &letter) {
+        const QPointF s = toScreen(world);
+        p.setPen(QPen(Qt::white, 2.5));
+        p.setBrush(c);
+        p.drawEllipse(s, 11, 11);
+        QFont f = font();
+        f.setBold(true);
+        p.setFont(f);
+        p.setPen(Qt::white);
+        p.drawText(QRectF(s.x() - 11, s.y() - 11, 22, 22), Qt::AlignCenter, letter);
+        p.setFont(font());
+    };
+    if (m_route.valid) {
+        for (const auto &part : m_route.drawing) {
+            QPolygonF screen;
+            for (const QPointF &w : part.second)
+                screen << toScreen(w);
+            p.setBrush(Qt::NoBrush);
+            if (!part.first.isValid()) { // marche
+                p.setPen(QPen(darkMap() ? QColor(255, 255, 255, 200) : QColor(30, 34, 40, 200), 3, Qt::DotLine,
+                              Qt::RoundCap));
+                p.drawPolyline(screen);
+                continue;
+            }
+            p.setPen(QPen(QColor(255, 255, 255, 230), 13, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            p.drawPolyline(screen);
+            p.setPen(QPen(part.first, 8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            p.drawPolyline(screen);
+        }
+        marker(m_route.from, QColor("#1E9E5A"), QStringLiteral("A"));
+        marker(m_route.to, QColor("#D64545"), QStringLiteral("B"));
+    } else if (m_hasRouteFrom) {
+        marker(m_routeFrom, QColor("#1E9E5A"), QStringLiteral("A"));
+    }
+}
+
+// Rendu du plan schématique hors écran (2× la résolution), puis PNG ou page PDF A3 paysage
+bool MapView::exportPlan(const QString &path, const QString &title)
+{
+    if (!m_city || m_metro->lines().isEmpty())
+        return false;
+    rebuildSchematic();
+    if (m_schem.isEmpty())
+        return false;
+    const double savedScale = m_scale;
+    const QPointF savedOffset = m_offset;
+    const int savedHover = m_hover, savedSelected = m_selected;
+    m_hover = m_selected = -1;
+    m_exporting = true;
+    m_exportTitle = title;
+    m_exportSize = QSizeF(1600, 1131); // proportions A3 paysage
+    // cadrage : tout le réseau, avec de la place pour le titre (haut) et la légende (droite)
+    QRectF box;
+    for (auto it = m_schem.cbegin(); it != m_schem.cend(); ++it)
+        box = box.isNull() ? QRectF(it.value(), QSizeF(1, 1)) : box.united(QRectF(it.value(), QSizeF(1, 1)));
+    const QRectF area(80, 130, m_exportSize.width() - 80 - 320, m_exportSize.height() - 130 - 90);
+    m_scale = std::min(area.width() / std::max(1.0, box.width()), area.height() / std::max(1.0, box.height()));
+    m_offset = area.center() - box.center() * m_scale;
+
+    QImage img((m_exportSize * 2).toSize(), QImage::Format_ARGB32_Premultiplied);
+    img.setDevicePixelRatio(2);
+    {
+        QPainter p(&img);
+        paintSchematic(p);
+    }
+    bool ok;
+    if (path.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive)) {
+        QPdfWriter pdf(path);
+        pdf.setTitle(title);
+        pdf.setCreator(QStringLiteral("Metro Builder"));
+        pdf.setPageSize(QPageSize(QPageSize::A3));
+        pdf.setPageOrientation(QPageLayout::Landscape);
+        pdf.setPageMargins(QMarginsF(0, 0, 0, 0));
+        pdf.setResolution(200);
+        QPainter p;
+        ok = p.begin(&pdf);
+        if (ok) {
+            p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            p.drawImage(QRect(0, 0, pdf.width(), pdf.height()), img);
+            ok = p.end();
+        }
+    } else {
+        ok = img.save(path);
+    }
+    m_exporting = false;
+    m_scale = savedScale;
+    m_offset = savedOffset;
+    m_hover = savedHover;
+    m_selected = savedSelected;
+    if (m_schematic)
+        update();
+    return ok;
 }
 
 void MapView::setOverlay(Overlay overlay)
@@ -523,6 +641,7 @@ void MapView::paintEvent(QPaintEvent *)
     drawStations(p);
     drawEvents(p);
     drawTrains(p); // au-dessus des stations : une rame à quai reste visible
+    drawRoute(p);
     drawProbe(p);
     drawExtendButtons(p);
     drawHud(p);
@@ -782,6 +901,10 @@ void MapView::drawHud(QPainter &p)
     case Delete:
         hint = tr("Cliquez une station ou un point de passage pour le supprimer (%1 % remboursés)")
                    .arg(int(Rules::Refund * 100));
+        break;
+    case RouteTool:
+        hint = m_hasRouteFrom ? tr("Cliquez le point d'arrivée")
+                              : tr("Itinéraire : cliquez le point de départ puis l'arrivée · clic droit pour effacer");
         break;
     }
     if (m_schematic)
@@ -1058,14 +1181,14 @@ void MapView::paintSchematic(QPainter &p)
     const bool dark = darkMap();
     const QColor paper = dark ? QColor("#12151B") : QColor("#F7F5F0");
     const QColor ink = dark ? QColor("#E8EAED") : QColor("#1B1D22");
-    p.fillRect(rect(), paper);
+    p.fillRect(QRectF(0, 0, vw(), vh()), paper);
     p.setRenderHint(QPainter::Antialiasing, true);
 
     // trame de points discrète
     p.setPen(Qt::NoPen);
     p.setBrush(dark ? QColor(255, 255, 255, 14) : QColor(0, 0, 0, 16));
-    for (int x = 20; x < width(); x += 32)
-        for (int y = 20; y < height(); y += 32)
+    for (int x = 20; x < vw(); x += 32)
+        for (int y = 20; y < vh(); y += 32)
             p.drawEllipse(QPointF(x, y), 1.1, 1.1);
 
     const auto &lines = m_metro->lines();
@@ -1203,6 +1326,22 @@ void MapView::paintSchematic(QPainter &p)
         }
     }
 
+    if (m_exporting) { // plan exporté : titre, sans rames ni bulle d'aide
+        QFont tf = font();
+        tf.setBold(true);
+        tf.setPointSizeF(tf.pointSizeF() * 2.2);
+        p.setFont(tf);
+        p.setPen(ink);
+        p.drawText(QPointF(60, 78), m_exportTitle);
+        QFont sf = font();
+        p.setFont(sf);
+        p.setPen(dark ? QColor("#9AA0A6") : QColor("#5F6368"));
+        p.drawText(QPointF(62, 104), tr("%1 stations · %2 lignes · Metro Builder")
+                                         .arg(m_metro->stations().size())
+                                         .arg(m_metro->lines().size()));
+        drawSchematicLegend(p);
+        return;
+    }
     // rames : un point qui glisse sur le tronçon schématique
     for (const TrainVis &t : m_metro->trains(0)) {
         const Line *l = m_metro->line(t.lineId);
@@ -1247,7 +1386,8 @@ void MapView::drawSchematicLegend(QPainter &p)
     for (int i = 0; i < rows; ++i)
         w = std::max<double>(w, fm.horizontalAdvance(lines[i].name) + 64);
     const double rowH = 24;
-    const QRectF box(width() - w - 16, height() - m_insetBottom - 16 - (38 + rows * rowH), w, 38 + rows * rowH);
+    const double bottom = m_exporting ? vh() - 40 : height() - m_insetBottom - 16;
+    const QRectF box(vw() - w - (m_exporting ? 40 : 16), bottom - (38 + rows * rowH), w, 38 + rows * rowH);
     drawPanel(p, box, 10);
     p.setFont(bold);
     p.setPen(kText);
@@ -1391,6 +1531,29 @@ void MapView::handleClick(Qt::MouseButton button, const QPointF &pos, Qt::Keyboa
     const int sid = stationUnder(pos);
     const QPointF world = m_metro->snapToRoad(toWorld(pos), std::max(25.0, 12 / m_scale));
 
+    if (m_tool == RouteTool) {
+        if (m_schematic) {
+            emit statusMessage(tr("L'itinéraire se choisit sur la carte (M pour y revenir)"));
+            return;
+        }
+        if (button == Qt::RightButton) {
+            clearRoute();
+            return;
+        }
+        if (button != Qt::LeftButton)
+            return;
+        if (!m_hasRouteFrom) { // nouveau départ
+            m_route = Route();
+            m_routeFrom = toWorld(pos);
+            m_hasRouteFrom = true;
+            update();
+        } else {
+            m_hasRouteFrom = false;
+            emit routeRequested(m_routeFrom, toWorld(pos));
+        }
+        Audio::instance().play(Audio::Click);
+        return;
+    }
     if (m_schematic) {
         // sur le plan, on agit sur les stations existantes ; la construction se fait sur la carte
         const QString needMap = tr("Repassez en vue carte (M) pour construire une station");
@@ -1424,6 +1587,8 @@ void MapView::handleClick(Qt::MouseButton button, const QPointF &pos, Qt::Keyboa
                 m_metro->removeStation(sid);
                 emit stationSelected(-1);
             }
+            break;
+        case RouteTool:
             break;
         }
         return;
@@ -1490,6 +1655,8 @@ void MapView::handleClick(Qt::MouseButton button, const QPointF &pos, Qt::Keyboa
         } else if (wp.valid()) {
             m_metro->removeWaypoint(wp.lineId, wp.seg, wp.index);
         }
+        break;
+    case RouteTool:
         break;
     }
 }

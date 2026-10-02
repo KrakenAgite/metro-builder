@@ -16,6 +16,7 @@ enum Id {
     ArrowUp, ArrowDown, Close, Swap, Loop,
     Wallet, Calendar, Train, Target, Home, Briefcase,
     Save, FolderOpen, File, Download, Info, Logo, Moon, Sun, Schema, Speaker, SpeakerOff, Trophy,
+    Undo, Redo, Directions, Image, Sandbox,
 };
 
 QPixmap pixmap(Id id, int size, const QColor &color);

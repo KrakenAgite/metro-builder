@@ -18,7 +18,7 @@ class MapView : public QWidget
 {
     Q_OBJECT
 public:
-    enum Tool { Select, AddStation, BuildLine, Delete };
+    enum Tool { Select, AddStation, BuildLine, Delete, RouteTool };
     enum Overlay { NoOverlay, Demand, Population, Jobs, Load };
 
     explicit MapView(Metro *metro, QWidget *parent = nullptr);
@@ -42,12 +42,19 @@ public:
     double viewScale() const { return m_scale; }
     void setView(const QPointF &center, double scale);
     bool darkMap() const;
+    // itinéraire affiché (outil Itinéraire)
+    void setRoute(const Route &route);
+    void clearRoute();
+    // exporte le plan schématique du réseau en PNG ou PDF
+    bool exportPlan(const QString &path, const QString &title);
 
 signals:
     void stationSelected(int stationId);
     void lineClicked(int lineId);
     void extendRequested(int side); // 0 nord, 1 est, 2 sud, 3 ouest
     void statusMessage(const QString &text);
+    void routeRequested(const QPointF &from, const QPointF &to); // monde
+    void routeCleared();
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -85,6 +92,9 @@ private:
     void rebuildSchematic();
     void paintSchematic(QPainter &p);
     void drawSchematicLegend(QPainter &p);
+    void drawRoute(QPainter &p);
+    double vw() const { return m_exporting ? m_exportSize.width() : width(); }
+    double vh() const { return m_exporting ? m_exportSize.height() : height(); }
 
     Metro *m_metro;
     QSharedPointer<CityData> m_city;
@@ -127,4 +137,12 @@ private:
     bool m_dragging = false;
     int m_dragStation = -1;
     TrackHit m_dragWaypoint, m_pendingTrack, m_hoverWaypoint, m_hoverTrack;
+
+    Route m_route;
+    QPointF m_routeFrom;
+    bool m_hasRouteFrom = false;
+
+    bool m_exporting = false;
+    QSizeF m_exportSize;
+    QString m_exportTitle;
 };

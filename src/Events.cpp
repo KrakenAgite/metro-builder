@@ -150,7 +150,7 @@ void Metro::tickEvents()
 void Metro::rollEvents()
 {
     ++m_monthsSinceEvent;
-    if (!m_city || m_events.size() >= MaxActiveEvents || m_monthsSinceEvent <= MinCalmMonths
+    if (!m_city || m_sandbox || m_events.size() >= MaxActiveEvents || m_monthsSinceEvent <= MinCalmMonths
         || rng().generateDouble() > MonthlyChance)
         return;
     // tirage pondéré parmi les événements applicables

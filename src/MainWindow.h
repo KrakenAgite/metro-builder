@@ -52,6 +52,12 @@ private:
     Card *buildStationCard();
     Card *buildFinanceCard();
     Card *buildGoalsCard();
+    Card *buildRouteCard();
+    void showRoute();
+    void exportPlan();
+    void exportMapImage();
+    void enterSandbox();
+    void refreshUndo();
     void refreshGoals();
     void onGoalCompleted(const Objective &goal);
     QString bestScoreKey() const;
@@ -158,6 +164,18 @@ private:
     ChartWidget *m_cMoney, *m_cFlows, *m_cResult, *m_cInvest, *m_cRiders, *m_cCapture, *m_cScore, *m_cPoints;
     LineEconomicsWidget *m_lineEco;
     int m_financeRange = 24; // mois affichés (0 = toute la partie)
+
+    // itinéraire
+    Card *m_routeCard;
+    QLabel *m_routeSummary, *m_routeDetail;
+    QVBoxLayout *m_routeSteps;
+    QPointF m_routeA, m_routeB;
+    bool m_routeActive = false;
+
+    // annuler / refaire, mode de jeu
+    QAction *m_undoAction, *m_redoAction, *m_sandboxAction;
+    QToolButton *m_modeCareer, *m_modeSandbox;
+    bool m_newSandbox = false; // mode des nouvelles parties
 
     // score et objectifs
     Card *m_goalsCard;

@@ -91,6 +91,7 @@ void Metro::reset()
     m_goals.clear();
     buildGrid();
     recompute();
+    resetUndo();
     emit eventsChanged();
 }
 
@@ -186,7 +187,7 @@ int Metro::stationAt(const QPointF &world, double radius) const
 
 bool Metro::spend(double amount, const QString &what)
 {
-    if (amount <= 0)
+    if (amount <= 0 || m_sandbox)
         return true;
     amount *= buildCostFactor(); // rabais ou pénurie en cours
     if (m_money < amount) {
@@ -307,8 +308,9 @@ void Metro::removeStation(int id)
 
 void Metro::renameStation(int id, const QString &name)
 {
-    if (Station *s = stationMut(id); s && !name.trimmed().isEmpty()) {
+    if (Station *s = stationMut(id); s && !name.trimmed().isEmpty() && s->name != name.trimmed()) {
         s->name = name.trimmed();
+        trackEdit();
         emit networkChanged();
     }
 }
@@ -678,7 +680,7 @@ bool Metro::addStop(int lineId, int stationId, bool atFront)
     if (!l->stops.isEmpty()) {
         const Station *nb = station(atFront ? l->stops.first() : l->stops.last());
         const double cost = dist(nb->pos, s->pos) / 1000.0 * Rules::TrackCostKm * buildCostFactor();
-        if (m_money < cost) {
+        if (!m_sandbox && m_money < cost) {
             spend(cost, tr("ce tunnel"));
             return false;
         }
@@ -774,8 +776,9 @@ void Metro::setLoop(int lineId, bool loop)
 
 void Metro::setLineName(int lineId, const QString &name)
 {
-    if (Line *l = lineMut(lineId); l && !name.trimmed().isEmpty()) {
+    if (Line *l = lineMut(lineId); l && !name.trimmed().isEmpty() && l->name != name.trimmed()) {
         l->name = name.trimmed();
+        trackEdit();
         emit networkChanged();
     }
 }
@@ -788,6 +791,7 @@ void Metro::setLineCode(int lineId, const QString &code)
     if (l->name == tr("Ligne %1").arg(l->code)) // nom par défaut : on le suit
         l->name = tr("Ligne %1").arg(code);
     l->code = code;
+    trackEdit();
     emit networkChanged();
 }
 
@@ -795,6 +799,7 @@ void Metro::setLineColor(int lineId, const QColor &color)
 {
     if (Line *l = lineMut(lineId); l && color.isValid()) {
         l->color = color;
+        trackEdit();
         emit networkChanged();
     }
 }
@@ -1090,6 +1095,7 @@ void Metro::recompute()
     m_monthlyRevenue = m_totalServed * Rules::DailyFactor * Rules::Fare * Rules::DaysPerMonth * Rules::RevenueBoost;
     m_monthlyCost = (wagons * Rules::WagonDailyCost + nS * Rules::StationDailyCost) * Rules::DaysPerMonth * opCostFactor();
 
+    trackEdit();
     checkGoals();
     emit networkChanged();
 }
@@ -1125,6 +1131,8 @@ void Metro::advance(double realSeconds, double speed)
 
 void Metro::charge(double amount)
 {
+    if (m_sandbox) // bac à sable : construction gratuite
+        return;
     m_money -= amount;
     m_current.investment += amount;
     m_totalInvested += amount;
@@ -1137,7 +1145,7 @@ void Metro::closeMonth()
     m_current.riders = m_totalServed;
     m_current.capture = m_satisfaction;
     // score du mois et série de mois bénéficiaires
-    m_lastMonthPoints = monthPoints();
+    m_lastMonthPoints = m_sandbox ? 0 : monthPoints();
     m_score += m_lastMonthPoints;
     m_profitStreak = m_current.revenue > m_current.operating && m_current.revenue > 0 ? m_profitStreak + 1 : 0;
     m_current.score = m_score;
@@ -1231,7 +1239,7 @@ static QJsonArray viaJson(const Line &l)
     return arr;
 }
 
-QJsonObject Metro::save() const
+QJsonObject Metro::networkJson() const
 {
     QJsonArray st, ln;
     for (const Station &s : m_stations)
@@ -1244,11 +1252,17 @@ QJsonObject Metro::save() const
                           {"wagons", l.wagons}, {"trains", l.trains}, {"loop", l.loop},
                           {"paid", l.paidLength}, {"stops", stops}, {"via", viaJson(l)}};
     }
+    return QJsonObject{{"stations", st}, {"lines", ln}, {"nextStation", m_nextStationId}, {"nextLine", m_nextLineId}};
+}
+
+QJsonObject Metro::save() const
+{
+    QJsonObject o = networkJson();
     QJsonArray hist;
     for (const MonthRecord &r : m_history)
         hist << QJsonArray{r.money, r.revenue, r.operating, r.investment, r.riders, r.capture,
                            r.score, r.monthPoints, r.goalPoints};
-    return QJsonObject{{"money", m_money},
+    const QJsonObject rest{{"money", m_money},
                        {"finance", m_financeSeconds},
                        {"history", hist},
                        {"current", QJsonArray{m_current.revenue, m_current.operating, m_current.investment, m_current.goalPoints}},
@@ -1259,13 +1273,13 @@ QJsonObject Metro::save() const
                        {"version", 2},
                        {"events", eventsJson()},
                        {"goals", goalsJson()},
-                       {"stations", st},
-                       {"lines", ln},
-                       {"nextStation", m_nextStationId},
-                       {"nextLine", m_nextLineId}};
+                       {"sandbox", m_sandbox}};
+    for (auto it = rest.begin(); it != rest.end(); ++it)
+        o.insert(it.key(), it.value());
+    return o;
 }
 
-bool Metro::load(const QJsonObject &o)
+void Metro::loadNetwork(const QJsonObject &o)
 {
     m_stations.clear();
     m_lines.clear();
@@ -1302,6 +1316,14 @@ bool Metro::load(const QJsonObject &o)
                 l.stops << sv.toInt();
         m_lines << l;
     }
+    m_nextStationId = o.value("nextStation").toInt(m_stations.size() + 1);
+    m_nextLineId = o.value("nextLine").toInt(m_lines.size() + 1);
+}
+
+bool Metro::load(const QJsonObject &o)
+{
+    loadNetwork(o);
+    m_sandbox = o.value("sandbox").toBool();
     m_money = o.value("money").toDouble(Rules::StartMoney);
     m_financeSeconds = o.value("finance").toDouble();
     m_history.clear();
@@ -1345,8 +1367,98 @@ bool Metro::load(const QJsonObject &o)
     m_financeSeconds = std::max(m_financeSeconds, m_history.size() * Rules::SecondsPerMonth);
     if (m_financeSeconds >= (m_history.size() + 1) * Rules::SecondsPerMonth)
         m_financeSeconds = m_history.size() * Rules::SecondsPerMonth;
-    m_nextStationId = o.value("nextStation").toInt(m_stations.size() + 1);
-    m_nextLineId = o.value("nextLine").toInt(m_lines.size() + 1);
     recompute();
+    resetUndo();
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// Annuler / refaire
+// ---------------------------------------------------------------------------
+
+void Metro::trackEdit()
+{
+    if (m_restoring || !m_city)
+        return;
+    const QJsonObject net = networkJson();
+    if (net == m_lastState.net) {
+        m_lastState.invested = m_totalInvested;
+        return;
+    }
+    m_undo << m_lastState;
+    if (m_undo.size() > 100)
+        m_undo.removeFirst();
+    m_redo.clear();
+    m_lastState = {net, m_totalInvested};
+    emit undoChanged();
+}
+
+void Metro::resetUndo()
+{
+    m_undo.clear();
+    m_redo.clear();
+    m_lastState = {networkJson(), m_totalInvested};
+    emit undoChanged();
+}
+
+// Remet le réseau dans l'état donné ; les investissements faits depuis sont remboursés (ou refacturés)
+void Metro::restoreState(const QJsonObject &net)
+{
+    m_restoring = true;
+    loadNetwork(net);
+    recompute();
+    m_restoring = false;
+    m_lastState = {networkJson(), m_totalInvested};
+    emit undoChanged();
+}
+
+bool Metro::undo()
+{
+    if (m_undo.isEmpty())
+        return false;
+    const UndoState target = m_undo.last();
+    const double cost = target.invested - m_totalInvested; // < 0 : remboursement intégral
+    if (!m_sandbox && cost > 0 && m_money < cost) { // annuler une démolition : on rachète au prix remboursé
+        emit message(tr("Budget insuffisant pour annuler (%1 M€ requis)").arg(cost, 0, 'f', 1));
+        return false;
+    }
+    m_undo.removeLast();
+    m_redo << UndoState{m_lastState.net, m_totalInvested};
+    charge(cost);
+    restoreState(target.net);
+    return true;
+}
+
+bool Metro::redo()
+{
+    if (m_redo.isEmpty())
+        return false;
+    const UndoState target = m_redo.last();
+    const double cost = target.invested - m_totalInvested;
+    if (!m_sandbox && cost > 0 && m_money < cost) {
+        emit message(tr("Budget insuffisant pour rétablir (%1 M€ requis)").arg(cost, 0, 'f', 1));
+        return false;
+    }
+    m_redo.removeLast();
+    m_undo << UndoState{m_lastState.net, m_totalInvested};
+    charge(cost);
+    restoreState(target.net);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Bac à sable
+// ---------------------------------------------------------------------------
+
+void Metro::setSandbox(bool on)
+{
+    if (on == m_sandbox)
+        return;
+    m_sandbox = on;
+    if (on) { // ni événements ni objectifs
+        m_events.clear();
+        emit eventsChanged();
+    }
+    recompute();
+    emit goalsChanged();
 }

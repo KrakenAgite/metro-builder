@@ -169,9 +169,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_stationCard = buildStationCard();
     m_financeCard = buildFinanceCard();
     m_goalsCard = buildGoalsCard();
+    m_routeCard = buildRouteCard();
     buildEventCards();
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_eventsCard, m_newsCard, m_decisionCard})
+                    m_routeCard, m_eventsCard, m_newsCard, m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
     m_dock->hide();
@@ -179,12 +180,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_stationCard->hide();
     m_financeCard->hide();
     m_goalsCard->hide();
+    m_routeCard->hide();
     m_eventsCard->hide();
     m_newsCard->hide();
     m_decisionCard->hide();
     m_toast = new Toast(m_root);
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_eventsCard, m_newsCard, m_decisionCard})
+                    m_routeCard, m_eventsCard, m_newsCard, m_decisionCard})
         c->ensurePolished();
     // un clic sur le budget ouvre les finances
     m_moneyChip->installEventFilter(this);
@@ -215,6 +217,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_map, &MapView::stationSelected, this, &MainWindow::selectStation);
     connect(m_map, &MapView::lineClicked, this, &MainWindow::selectLine);
     connect(m_map, &MapView::extendRequested, this, &MainWindow::extendMap);
+    connect(m_map, &MapView::routeRequested, this, [this](const QPointF &a, const QPointF &b) {
+        m_routeA = a;
+        m_routeB = b;
+        m_routeActive = true;
+        showRoute();
+    });
+    connect(m_map, &MapView::routeCleared, this, [this] {
+        m_routeActive = false;
+        m_routeCard->hide();
+        layoutOverlays();
+    });
+    connect(m_metro, &Metro::undoChanged, this, &MainWindow::refreshUndo);
 
     connect(&m_autosaveTimer, &QTimer::timeout, this, &MainWindow::autosave);
     if (m_autosaveMinutes > 0)
@@ -258,6 +272,32 @@ Card *MainWindow::buildCityCard()
     subtitle->setWordWrap(true);
     wt->addWidget(title);
     wt->addWidget(subtitle);
+    // mode des nouvelles parties
+    auto *modeRow = new QHBoxLayout;
+    modeRow->setContentsMargins(0, 8, 0, 0);
+    modeRow->setSpacing(4);
+    auto *modeGroup = new QButtonGroup(this);
+    m_modeCareer = new QToolButton;
+    m_modeCareer->setText(tr("Carrière"));
+    m_modeCareer->setToolTip(tr("Budget, événements, score et objectifs"));
+    m_modeSandbox = new QToolButton;
+    m_modeSandbox->setText(tr("Bac à sable"));
+    m_modeSandbox->setToolTip(tr("Construction gratuite, sans événements ni score : dessinez le réseau de vos rêves"));
+    m_newSandbox = QSettings().value("game/sandbox", false).toBool();
+    for (QToolButton *b : {m_modeCareer, m_modeSandbox}) {
+        b->setCheckable(true);
+        b->setProperty("variant", "segment");
+        b->setCursor(Qt::PointingHandCursor);
+        modeGroup->addButton(b);
+        modeRow->addWidget(b);
+    }
+    (m_newSandbox ? m_modeSandbox : m_modeCareer)->setChecked(true);
+    connect(m_modeSandbox, &QToolButton::toggled, this, [this](bool on) {
+        m_newSandbox = on;
+        QSettings().setValue("game/sandbox", on);
+    });
+    modeRow->addStretch();
+    wt->addLayout(modeRow);
     wl->addLayout(wt, 1);
     lay->addWidget(m_welcome);
 
@@ -303,6 +343,20 @@ Card *MainWindow::buildCityCard()
         }
     });
     menu->addSeparator();
+    m_undoAction = menu->addAction(Icons::icon(Icons::Undo), tr("Annuler"), QKeySequence::Undo, this, [this] {
+        if (m_metro->city() && m_metro->undo()) {
+            Audio::instance().play(Audio::Click);
+            m_toast->show(tr("Modification annulée"), false, true);
+        }
+    });
+    m_redoAction = menu->addAction(Icons::icon(Icons::Redo), tr("Rétablir"), this, [this] {
+        if (m_metro->city() && m_metro->redo()) {
+            Audio::instance().play(Audio::Click);
+            m_toast->show(tr("Modification rétablie"), false, true);
+        }
+    });
+    m_redoAction->setShortcuts({QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")});
+    menu->addSeparator();
     menu->addAction(Icons::icon(Icons::Save), tr("Sauvegarder"), QKeySequence::Save, this,
                     &MainWindow::saveGame);
     menu->addAction(Icons::icon(Icons::Save), tr("Sauvegarder sous…"), QKeySequence("Ctrl+Shift+S"), this,
@@ -328,6 +382,12 @@ Card *MainWindow::buildCityCard()
         autoGroup->addAction(a);
         connect(a, &QAction::triggered, this, [this, minutes] { setAutosaveMinutes(minutes); });
     }
+    menu->addSeparator();
+    menu->addAction(Icons::icon(Icons::Image), tr("Exporter le plan du réseau (PNG, PDF)…"), QKeySequence("Ctrl+E"),
+                    this, &MainWindow::exportPlan);
+    menu->addAction(Icons::icon(Icons::Image), tr("Capture de la carte (PNG)…"), this, &MainWindow::exportMapImage);
+    m_sandboxAction = menu->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
+                                      &MainWindow::enterSandbox);
     menu->addSeparator();
     menu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"), m_map,
                     &MapView::fitCity);
@@ -449,6 +509,7 @@ Card *MainWindow::buildDock()
         {Icons::Station, tr("Construire une station — 2"), MapView::AddStation},
         {Icons::Route, tr("Tracer la ligne sélectionnée — 3"), MapView::BuildLine},
         {Icons::Trash, tr("Démolir — 4"), MapView::Delete},
+        {Icons::Directions, tr("Itinéraire : temps de trajet entre deux points — 5"), MapView::RouteTool},
     };
     for (const auto &t : tools) {
         auto *b = iconButton(t.icon, t.tip, true, 44);
@@ -541,9 +602,6 @@ Card *MainWindow::buildDock()
     lay->addSpacing(6);
     lay->addWidget(vSeparator());
     lay->addSpacing(6);
-    auto *fit = iconButton(Icons::Recenter, tr("Recadrer la carte — F"), false, 40);
-    connect(fit, &QToolButton::clicked, m_map, &MapView::fitCity);
-    lay->addWidget(fit);
 
     // Carte claire / sombre (mémorisé entre les parties)
     m_themeBtn = iconButton(Icons::Moon, tr("Carte sombre — D"), true, 40);
@@ -858,7 +916,7 @@ void MainWindow::buildShortcuts()
         connect(a, &QAction::triggered, this, fn);
         addAction(a);
     };
-    for (int t = MapView::Select; t <= MapView::Delete; ++t)
+    for (int t = MapView::Select; t <= MapView::RouteTool; ++t)
         shortcut(QKeySequence(QString::number(t + 1)), [this, t] {
             if (m_metro->city())
                 setTool(t);
@@ -1167,7 +1225,7 @@ void MainWindow::refreshGoals()
     if (!m_metro->city())
         return;
     const double score = m_metro->score();
-    if (score > m_bestScore) {
+    if (!m_metro->sandbox() && score > m_bestScore) {
         m_bestScore = score;
         QSettings().setValue(bestScoreKey(), score);
     }
@@ -1204,6 +1262,180 @@ void MainWindow::onGoalCompleted(const Objective &goal)
     QTimer::singleShot(350, this, [] { Audio::instance().play(Audio::Good); });
     refreshGoals();
     m_layoutTimer.start(0);
+}
+
+// ---------------------------------------------------------------------------
+// Itinéraire
+// ---------------------------------------------------------------------------
+
+Card *MainWindow::buildRouteCard()
+{
+    auto *card = new Card;
+    auto *lay = new QVBoxLayout(card);
+    lay->setContentsMargins(Card::Shadow + 12, Card::Shadow + 8, Card::Shadow + 10, Card::Shadow + 10);
+    lay->setSpacing(6);
+    auto *head = new QHBoxLayout;
+    head->setSpacing(8);
+    auto *icon = new QLabel;
+    icon->setPixmap(Icons::pixmap(Icons::Directions, 20, Theme::Accent.lighter(130)));
+    head->addWidget(icon);
+    auto *title = new QLabel(tr("Itinéraire"));
+    title->setStyleSheet("font-weight: 700; font-size: 11pt;");
+    head->addWidget(title, 1);
+    auto *close = iconButton(Icons::Close, tr("Effacer l'itinéraire"), false, 28);
+    connect(close, &QToolButton::clicked, m_map, &MapView::clearRoute);
+    head->addWidget(close);
+    lay->addLayout(head);
+    m_routeSummary = new QLabel;
+    m_routeSummary->setStyleSheet("font-size: 15pt; font-weight: 700;");
+    lay->addWidget(m_routeSummary);
+    m_routeDetail = new QLabel;
+    m_routeDetail->setWordWrap(true);
+    m_routeDetail->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    m_routeDetail->setProperty("role", "subtitle");
+    lay->addWidget(m_routeDetail);
+    lay->addSpacing(4);
+    m_routeSteps = new QVBoxLayout;
+    m_routeSteps->setSpacing(4);
+    lay->addLayout(m_routeSteps);
+    return card;
+}
+
+void MainWindow::showRoute()
+{
+    const Route r = m_metro->route(m_routeA, m_routeB);
+    m_map->setRoute(r);
+    auto mins = [](double m) {
+        const int n = std::max(1, int(std::round(m)));
+        return n >= 60 ? QObject::tr("%1 h %2").arg(n / 60).arg(n % 60, 2, 10, QLatin1Char('0'))
+                       : QObject::tr("%1 min").arg(n);
+    };
+    if (r.byMetro) {
+        const double gain = r.walkMinutes - r.minutes;
+        m_routeSummary->setText(tr("%1 en métro").arg(mins(r.minutes)));
+        m_routeDetail->setText(tr("%1 à pied · %2 gagnées").arg(mins(r.walkMinutes), mins(gain)));
+        m_routeDetail->setWordWrap(false); // une ligne : pas d'espace réservé pour un retour à la ligne
+    } else {
+        m_routeSummary->setText(tr("%1 à pied").arg(mins(r.walkMinutes)));
+        m_routeDetail->setWordWrap(true);
+        m_routeDetail->setText(tr("Aucun trajet en métro plus rapide : il manque une station à moins de 1,5 km "
+                                  "du départ ou de l'arrivée, ou le détour est trop grand."));
+    }
+    clearLayout(m_routeSteps);
+    auto stationName = [this](int id) {
+        const Station *s = m_metro->station(id);
+        return s ? s->name : QString();
+    };
+    for (const RouteStep &st : r.steps) {
+        auto *rowWidget = new QWidget; // un widget par étape : effacé proprement par clearLayout
+        auto *row = new QHBoxLayout(rowWidget);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(10);
+        QString text;
+        if (st.kind == RouteStep::Ride) {
+            const Line *l = m_metro->line(st.lineId);
+            auto *badge = new LineBadge(st.lineId, l ? l->code : QString(), l ? l->color : Qt::gray, false);
+            badge->setFixedSize(26, 26);
+            badge->setAttribute(Qt::WA_TransparentForMouseEvents);
+            row->addWidget(badge, 0, Qt::AlignTop);
+            text = tr("<b>%1</b> direction %2<br><span style='color:#9AA0A6'>%3 → %4 · %5 · %6, attente comprise</span>")
+                       .arg(l ? l->name : QString(), st.towards, stationName(st.fromStation),
+                            stationName(st.toStation),
+                            st.stops == 1 ? tr("1 arrêt") : tr("%1 arrêts").arg(st.stops), mins(st.minutes));
+        } else {
+            auto *ic = new QLabel;
+            ic->setFixedSize(26, 26);
+            ic->setAlignment(Qt::AlignCenter);
+            ic->setPixmap(Icons::pixmap(st.kind == RouteStep::Walk ? Icons::Users : Icons::Swap, 16, Theme::TextDim));
+            row->addWidget(ic, 0, Qt::AlignTop);
+            if (st.kind == RouteStep::Transfer)
+                text = tr("Correspondance à <b>%1</b><br><span style='color:#9AA0A6'>%2 avec l'attente</span>")
+                           .arg(stationName(st.fromStation), mins(st.minutes));
+            else if (st.toStation >= 0)
+                text = tr("Marcher jusqu'à <b>%1</b><br><span style='color:#9AA0A6'>%2 · %3 m</span>")
+                           .arg(stationName(st.toStation), mins(st.minutes)).arg(qRound(st.meters / 10) * 10);
+            else
+                text = tr("Marcher jusqu'à l'arrivée<br><span style='color:#9AA0A6'>%1 · %2 m</span>")
+                           .arg(mins(st.minutes)).arg(qRound(st.meters / 10) * 10);
+        }
+        auto *label = new QLabel(text);
+        label->setWordWrap(true);
+        label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        row->addWidget(label, 1);
+        m_routeSteps->addWidget(rowWidget);
+    }
+    m_routeCard->show();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+// ---------------------------------------------------------------------------
+// Export, bac à sable, annuler
+// ---------------------------------------------------------------------------
+
+void MainWindow::exportPlan()
+{
+    if (!m_metro->city())
+        return;
+    if (m_metro->lines().isEmpty()) {
+        m_toast->show(tr("Créez au moins une ligne avant d'exporter le plan"), true);
+        return;
+    }
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    QString name = m_metro->city()->name;
+    name.replace(QRegularExpression("[^\\w-]+"), "_");
+    QString path = QFileDialog::getSaveFileName(this, tr("Exporter le plan du réseau"),
+                                                QStringLiteral("%1/plan-metro-%2.png").arg(dir, name),
+                                                tr("Image PNG (*.png);;Document PDF (*.pdf)"));
+    if (path.isEmpty())
+        return;
+    if (!path.endsWith(".png", Qt::CaseInsensitive) && !path.endsWith(".pdf", Qt::CaseInsensitive))
+        path += ".png";
+    if (m_map->exportPlan(path, tr("Métro de %1").arg(m_metro->city()->name)))
+        m_toast->show(tr("Plan exporté : %1").arg(QFileInfo(path).fileName()));
+    else
+        m_toast->show(tr("Impossible d'écrire %1").arg(QFileInfo(path).fileName()), true);
+}
+
+void MainWindow::exportMapImage()
+{
+    if (!m_metro->city())
+        return;
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    QString path = QFileDialog::getSaveFileName(this, tr("Capture de la carte"),
+                                                QStringLiteral("%1/metro-%2.png").arg(dir, m_metro->city()->name),
+                                                tr("Image PNG (*.png)"));
+    if (path.isEmpty())
+        return;
+    if (!path.endsWith(".png", Qt::CaseInsensitive))
+        path += ".png";
+    if (m_map->grab().save(path))
+        m_toast->show(tr("Carte enregistrée : %1").arg(QFileInfo(path).fileName()));
+    else
+        m_toast->show(tr("Impossible d'écrire %1").arg(QFileInfo(path).fileName()), true);
+}
+
+void MainWindow::enterSandbox()
+{
+    if (!m_metro->city() || m_metro->sandbox())
+        return;
+    if (QMessageBox::question(this, tr("Bac à sable"),
+                              tr("Passer cette partie en bac à sable ? La construction devient gratuite, "
+                                 "les événements et les objectifs s'arrêtent. On ne peut pas revenir en carrière."))
+        != QMessageBox::Yes)
+        return;
+    m_metro->setSandbox(true);
+    refreshAll();
+    refreshUndo();
+    m_toast->show(tr("Partie en bac à sable : construisez librement"));
+}
+
+void MainWindow::refreshUndo()
+{
+    const bool city = m_metro->city() != nullptr;
+    m_undoAction->setEnabled(city && m_metro->canUndo());
+    m_redoAction->setEnabled(city && m_metro->canRedo());
+    m_sandboxAction->setEnabled(city && !m_metro->sandbox());
 }
 
 // ---------------------------------------------------------------------------
@@ -1437,6 +1669,16 @@ void MainWindow::layoutOverlays()
         m_eventsCard->adjustSize();
         m_eventsCard->move(kMargin, m_cityCard->geometry().bottom() - Card::Shadow);
     }
+    // itinéraire : sous les événements (ou la recherche), à gauche
+    if (m_routeCard->isVisible()) {
+        const int top = (m_eventsCard->isVisible() ? m_eventsCard : m_cityCard)->geometry().bottom() - Card::Shadow;
+        const int w = std::min(380, std::max(320, m_cityCard->width()));
+        m_routeCard->setFixedWidth(w);
+        // hauteur exacte pour cette largeur (les textes sur plusieurs lignes faussent adjustSize)
+        m_routeCard->layout()->activate();
+        m_routeCard->setFixedHeight(m_routeCard->layout()->totalHeightForWidth(w));
+        m_routeCard->move(kMargin, top);
+    }
     for (QWidget *content : {m_lineContent, m_stationContent})
         content->layout()->setSpacing(compact ? 6 : 10);
     auto wanted = [](Card *card, QWidget *content) {
@@ -1445,8 +1687,9 @@ void MainWindow::layoutOverlays()
     };
     const int bottomLimit = dockTop + Card::Shadow; // haut visuel du dock
     if (m_lineCard->isVisible()) {
-        const int topEdge = m_eventsCard->isVisible() ? m_eventsCard->geometry().bottom()
-                                                      : m_cityCard->geometry().bottom();
+        const int topEdge = m_routeCard->isVisible()    ? m_routeCard->geometry().bottom()
+                            : m_eventsCard->isVisible() ? m_eventsCard->geometry().bottom()
+                                                        : m_cityCard->geometry().bottom();
         const int avail = bottomLimit - (topEdge - Card::Shadow);
         // la liste des arrêts rétrécit d'abord (3 arrêts visibles au minimum), puis le panneau défile
         const int rows = m_stopList->count();
@@ -1460,7 +1703,9 @@ void MainWindow::layoutOverlays()
         m_lineCard->move(kMargin, bottomLimit - h);
     }
     // score et objectifs : sous les indicateurs, à droite (masqués sur petit écran quand la fiche station est ouverte)
-    m_goalsCard->setVisible(hasCity && m_goalsBtn->isChecked() && !(compact && m_stationCard->isVisible()));
+    m_goalsCard->setVisible(hasCity && !m_metro->sandbox() && m_goalsBtn->isChecked()
+                            && !(compact && m_stationCard->isVisible()));
+    m_goalsBtn->setEnabled(!m_metro->sandbox());
     if (m_goalsCard->isVisible()) {
         m_goalsCard->adjustSize();
         m_goalsCard->move(W - m_goalsCard->width() - kMargin, m_statsCard->geometry().bottom() - Card::Shadow);
@@ -1501,6 +1746,7 @@ void MainWindow::layoutOverlays()
     for (QWidget *w : {static_cast<QWidget *>(m_cityCard), static_cast<QWidget *>(m_statsCard),
                        static_cast<QWidget *>(m_dock), static_cast<QWidget *>(m_lineCard),
                        static_cast<QWidget *>(m_stationCard), static_cast<QWidget *>(m_goalsCard),
+                       static_cast<QWidget *>(m_routeCard),
                        static_cast<QWidget *>(m_financeCard),
                        static_cast<QWidget *>(m_eventsCard), static_cast<QWidget *>(m_newsCard),
                        static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_toast)})
@@ -1549,7 +1795,11 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     if (!m_pendingGame.isEmpty()) {
         m_metro->load(m_pendingGame);
         m_pendingGame = {};
+    } else {
+        m_metro->setSandbox(m_newSandbox); // nouvelle partie
     }
+    m_routeActive = false;
+    m_routeCard->hide();
     // partie sauvegardée sur une zone agrandie : on la reconstitue
     if (m_pendingArea.isValid() && m_pendingArea != city->area)
         QTimer::singleShot(0, this, [this, city] {
@@ -1704,6 +1954,9 @@ void MainWindow::refreshAll()
     refreshLineEditor();
     refreshStation();
     refreshFinance();
+    if (m_routeActive)
+        showRoute(); // le réseau a changé : itinéraire recalculé
+    refreshUndo();
     layoutOverlays();
     m_layoutTimer.start(0); // second passage une fois les nouveaux widgets stylés
 }
@@ -1711,7 +1964,7 @@ void MainWindow::refreshAll()
 void MainWindow::refreshStats()
 {
     const double net = (m_metro->monthlyRevenue() - m_metro->monthlyCost()) / 1e6;
-    m_moneyChip->setValue(money(m_metro->money()));
+    m_moneyChip->setValue(m_metro->sandbox() ? tr("Bac à sable") : money(m_metro->money()));
     m_moneyChip->setSub(tr("%1%2 /mois").arg(net >= 0 ? "+" : "").arg(money(net)),
                         net >= 0 ? Theme::Success : Theme::Danger);
     const int month = m_metro->month() - 1;
@@ -2206,7 +2459,8 @@ void MainWindow::showHelp()
     box.setWindowTitle(tr("Aide"));
     box.setIconPixmap(Icons::pixmap(Icons::Logo, 48, Qt::white));
     box.setText(tr("<h3>Metro Builder</h3>"
-                   "<p><b>1</b> Sélection · <b>2</b> Station · <b>3</b> Tracer · <b>4</b> Démolir<br>"
+                   "<p><b>1</b> Sélection · <b>2</b> Station · <b>3</b> Tracer · <b>4</b> Démolir · <b>5</b> Itinéraire<br>"
+                   "<b>Ctrl+Z / Ctrl+Y</b> annuler / rétablir (la construction annulée est remboursée) · <b>Ctrl+E</b> exporter le plan<br>"
                    "<b>N</b> nouvelle ligne numérotée · <b>Maj+N</b> ligne lettre · <b>Espace</b> pause · <b>F</b> recadrer · <b>M</b> plan schématique · <b>B</b> finances · <b>O</b> objectifs · <b>Échap</b> fermer<br>"
                    "<b>Suppr</b> démolir la station sélectionnée · <b>Ctrl+S / Ctrl+O</b> partie</p>"
                    "<p>En mode tracé : clic = ajouter en bout de ligne, Ctrl+clic = en tête, "
@@ -2219,6 +2473,10 @@ void MainWindow::showHelp()
                    "<p><b>Score et objectifs</b> : chaque mois rapporte des points (voyageurs, demande captée, "
                    "rentabilité) ; chaque objectif atteint donne des points et une prime, puis laisse place à un plus difficile. "
                    "Le meilleur score de chaque ville est conservé.</p>"
+                   "<p><b>Itinéraire</b> (5) : cliquez un départ puis une arrivée pour voir le meilleur trajet "
+                   "(marche, attente, métro, correspondances) et le comparer à la marche.</p>"
+                   "<p><b>Bac à sable</b> : choisissez-le sur l'écran d'accueil (ou ☰ pour la partie en cours) : "
+                   "construction gratuite, sans événements ni score.</p>"
                    "<p><b>Agrandir la carte</b> : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.</p>"
                    "<p>Calque <b>demande</b> : rouge = déplacements non desservis, vert = captés par le métro.</p>"
                    "<p style='color:#9AA0A6'>Données © contributeurs OpenStreetMap (ODbL) · "

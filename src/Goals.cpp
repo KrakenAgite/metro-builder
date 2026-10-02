@@ -210,7 +210,7 @@ bool Metro::spawnGoal()
 
 void Metro::checkGoals()
 {
-    if (m_checkingGoals)
+    if (m_checkingGoals || m_sandbox)
         return;
     m_checkingGoals = true;
     bool changed = false;

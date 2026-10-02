@@ -274,6 +274,49 @@ void draw(QPainter &p, Id id, const QColor &c)
         p.drawEllipse(QPointF(3, 7), 1.6, 1.6);
         p.drawEllipse(QPointF(21, 14), 1.6, 1.6);
         break;
+    case Undo:
+    case Redo: {
+        p.save();
+        if (id == Redo) { // miroir horizontal
+            p.translate(24, 0);
+            p.scale(-1, 1);
+        }
+        QPainterPath arc;
+        arc.moveTo(8, 9);
+        arc.lineTo(14.5, 9);
+        arc.cubicTo(18.5, 9, 20.5, 11.5, 20.5, 14.5);
+        arc.cubicTo(20.5, 17.5, 18.5, 20, 14.5, 20);
+        arc.lineTo(9, 20);
+        p.drawPath(arc);
+        p.drawPath(poly({{11.5, 5}, {7.5, 9}, {11.5, 13}}));
+        p.restore();
+        break;
+    }
+    case Directions:
+        // départ, trajet sinueux, arrivée
+        p.drawEllipse(QPointF(6, 18), 2.2, 2.2);
+        {
+            QPainterPath path;
+            path.moveTo(8, 17);
+            path.cubicTo(13, 15, 8, 9, 13, 8);
+            path.lineTo(15, 7.6);
+            p.drawPath(path);
+        }
+        p.drawPath(poly({{18, 3.5}, {18, 11}}));
+        p.drawPath(poly({{18, 3.5}, {22, 5.2}, {18, 7}}, true));
+        break;
+    case Image:
+        p.drawRoundedRect(QRectF(3.5, 4.5, 17, 15), 2.5, 2.5);
+        p.drawPath(poly({{3.5, 17}, {9, 11.5}, {13, 15.5}, {15.5, 13}, {20.5, 18}}));
+        p.drawEllipse(QPointF(15.5, 9), 1.6, 1.6);
+        break;
+    case Sandbox:
+        // seau et pelle
+        p.drawPath(poly({{5, 9}, {7, 20}, {15, 20}, {17, 9}}, true));
+        p.drawLine(QPointF(4, 9), QPointF(18, 9));
+        p.drawLine(QPointF(19, 3.5), QPointF(16.5, 13));
+        p.drawEllipse(QPointF(16, 14.5), 1.6, 1.6);
+        break;
     case Trophy:
         p.drawLine(QPointF(7, 4), QPointF(17, 4));
         {

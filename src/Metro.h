@@ -193,6 +193,27 @@ struct Objective {
     double progress() const { return target > 0 ? std::clamp(value / target, 0.0, 1.0) : 0; }
 };
 
+// Itinéraire calculé : étapes à pied, en métro et correspondances
+struct RouteStep {
+    enum Kind { Walk, Ride, Transfer } kind = Walk;
+    int lineId = -1;
+    int fromStation = -1, toStation = -1; // ids (-1 = point de départ / d'arrivée)
+    int stops = 0;          // arrêts parcourus (métro)
+    QString towards;        // direction (terminus)
+    double minutes = 0;
+    double meters = 0;      // distance à pied
+};
+
+struct Route {
+    bool valid = false;     // départ et arrivée renseignés
+    bool byMetro = false;   // false : il vaut mieux marcher
+    QPointF from, to;
+    double minutes = 0;     // durée totale du meilleur trajet
+    double walkMinutes = 0; // durée à pied directe
+    QVector<RouteStep> steps;
+    QVector<QPair<QColor, QPolygonF>> drawing; // tracé à surligner (couleur, polyligne monde) ; gris = marche
+};
+
 // Bilan d'un mois de jeu (montants en M€)
 struct MonthRecord {
     int month = 0;
@@ -316,6 +337,19 @@ public:
     QJsonObject save() const;
     bool load(const QJsonObject &o);
 
+    // Annuler / refaire : chaque modification du réseau est mémorisée ; annuler rembourse la construction
+    bool canUndo() const { return !m_undo.isEmpty(); }
+    bool canRedo() const { return !m_redo.isEmpty(); }
+    bool undo();
+    bool redo();
+
+    // Bac à sable : construction gratuite, ni événements ni score
+    bool sandbox() const { return m_sandbox; }
+    void setSandbox(bool on);
+
+    // Itinéraire entre deux points de la ville (marche + métro)
+    Route route(const QPointF &from, const QPointF &to) const;
+
 signals:
     void networkChanged();
     void message(const QString &text);
@@ -324,6 +358,7 @@ signals:
     void notice(const QString &text); // information neutre (fin d'un événement…)
     void goalCompleted(const Objective &goal);
     void goalsChanged();
+    void undoChanged();
 
 private:
     Station *stationMut(int id);
@@ -342,6 +377,11 @@ private:
     QJsonArray eventsJson() const;
     void loadEvents(const QJsonObject &o);
     void closeMonth();
+    QJsonObject networkJson() const;
+    void loadNetwork(const QJsonObject &o);
+    void trackEdit();  // après une modification : mémorise l'état précédent pour « annuler »
+    void resetUndo();
+    void restoreState(const QJsonObject &net);
     void checkGoals();
     Objective makeGoal(GoalKind kind, int level) const;
     double goalValue(GoalKind kind) const;
@@ -385,4 +425,12 @@ private:
     int m_goalLevel[int(GoalKind::Count)] = {};
     QVector<Objective> m_goals;
     bool m_checkingGoals = false;
+    bool m_sandbox = false;
+    struct UndoState {
+        QJsonObject net;
+        double invested = 0;
+    };
+    QVector<UndoState> m_undo, m_redo;
+    UndoState m_lastState;
+    bool m_restoring = false;
 };
