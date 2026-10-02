@@ -10,6 +10,8 @@
 #include "Profile.h"
 
 #include <QAction>
+#include <QProcess>
+#include <QPointer>
 #include <QActionGroup>
 #include <QApplication>
 #include <QButtonGroup>
@@ -50,18 +52,18 @@ namespace {
 
 QString money(double m)
 {
-    return QStringLiteral("%1 M€").arg(QLocale(QLocale::French).toString(m, 'f', 1));
+    return QStringLiteral("%1 M€").arg(QLocale().toString(m, 'f', 1));
 }
 
 QString count(double v)
 {
-    return QLocale(QLocale::French).toString(qRound(v));
+    return QLocale().toString(qRound(v));
 }
 
 QString compact(double v)
 {
     if (v >= 10000)
-        return QStringLiteral("%1 k").arg(QLocale(QLocale::French).toString(v / 1000, 'f', 1));
+        return QStringLiteral("%1 k").arg(QLocale().toString(v / 1000, 'f', 1));
     return count(v);
 }
 
@@ -206,10 +208,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_scenarioCard = buildScenarioCard();
     m_achievementsCard = buildAchievementsCard();
     m_missionEndCard = buildMissionEndCard();
+    m_tutorialCard = buildTutorialCard();
     buildEventCards();
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard,
-                    m_newsCard, m_decisionCard})
+                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
+                    m_eventsCard, m_newsCard, m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
     m_dock->hide();
@@ -219,6 +222,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_goalsCard->hide();
     m_routeCard->hide();
     m_profileCard->hide();
+    m_tutorialCard->hide();
     m_scenarioCard->hide();
     m_achievementsCard->hide();
     m_missionEndCard->hide();
@@ -227,8 +231,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_decisionCard->hide();
     m_toast = new Toast(m_root);
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard,
-                    m_newsCard, m_decisionCard})
+                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
+                    m_eventsCard, m_newsCard, m_decisionCard})
         c->ensurePolished();
     // un clic sur le budget ouvre les finances
     m_moneyChip->installEventFilter(this);
@@ -390,7 +394,7 @@ Card *MainWindow::buildCityCard()
     sl->addWidget(m_cityEdit, 1);
     m_radiusCombo = new QComboBox;
     for (double r : {1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0})
-        m_radiusCombo->addItem(QStringLiteral("%1 km").arg(QLocale(QLocale::French).toString(r)), r);
+        m_radiusCombo->addItem(QStringLiteral("%1 km").arg(QLocale().toString(r)), r);
     m_radiusCombo->setCurrentIndex(2);
     m_radiusCombo->setToolTip(tr("Demi-côté de la zone de jeu (au-delà de 4 km la carte devient plus lourde à afficher)"));
     sl->addWidget(m_radiusCombo);
@@ -507,6 +511,26 @@ Card *MainWindow::buildCityCard()
         QSettings().setValue("audio/sfxVolume", v);
         Audio::instance().play(Audio::Click);
     }, sound));
+    QMenu *langMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Langue / Language"));
+    langMenu->setWindowFlags(langMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    langMenu->setAttribute(Qt::WA_TranslucentBackground);
+    auto *langGroup = new QActionGroup(this);
+    const QString current = QLocale().language() == QLocale::English ? QStringLiteral("en") : QStringLiteral("fr");
+    for (const auto &[code, label] : {std::pair<QString, QString>{"fr", QStringLiteral("Français")},
+                                      std::pair<QString, QString>{"en", QStringLiteral("English")}}) {
+        QAction *a = langMenu->addAction(label);
+        a->setCheckable(true);
+        a->setChecked(code == current);
+        langGroup->addAction(a);
+        const QString c = code;
+        connect(a, &QAction::triggered, this, [this, c] { setLanguage(c); });
+    }
+    menu->addAction(Icons::icon(Icons::Play), tr("Tutoriel"), this, [this] {
+        if (m_metro->city())
+            startTutorial();
+        else
+            m_toast->show(tr("Chargez d'abord une ville pour suivre le tutoriel"));
+    });
     menu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
                     &MainWindow::showHelp);
     addActions(menu->actions()); // raccourcis actifs même menu fermé
@@ -660,6 +684,7 @@ Card *MainWindow::buildDock()
     add->setMenu(addMenu);
     add->setPopupMode(QToolButton::InstantPopup);
     lay->addWidget(add);
+    m_addLineBtn = add;
 
     lay->addSpacing(6);
     lay->addWidget(vSeparator());
@@ -1735,7 +1760,7 @@ Card *MainWindow::buildScenarioCard()
 void MainWindow::showScenarios()
 {
     clearLayout(m_scenarioList);
-    const auto loc = QLocale(QLocale::French);
+    const auto loc = QLocale();
     for (const ScenarioDef &d : Metro::scenarios()) {
         auto *row = new QWidget;
         row->setObjectName("scenarioRow");
@@ -1862,7 +1887,7 @@ void MainWindow::showAchievements()
         t->setStyleSheet(got ? "font-weight: 700;" : "font-weight: 700; color: #7D8597;");
         col->addWidget(t);
         auto *desc = caption(got ? tr("%1 · %2").arg(d.description,
-                                                       QLocale(QLocale::French).toString(m_achievements->when(d.id).date(),
+                                                       QLocale().toString(m_achievements->when(d.id).date(),
                                                                                          QLocale::ShortFormat))
                                  : d.description);
         desc->setWordWrap(true);
@@ -1969,6 +1994,207 @@ void MainWindow::importRealNetwork()
         != QMessageBox::Yes)
         return;
     m_transit->fetch(m_metro->city());
+}
+
+// ---------------------------------------------------------------------------
+// Tutoriel
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Anneau pulsant qui désigne un élément de l'interface pendant le tutoriel
+class HighlightRing : public QWidget
+{
+public:
+    explicit HighlightRing(QWidget *parent)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_TranslucentBackground);
+        m_timer.setInterval(33);
+        QObject::connect(&m_timer, &QTimer::timeout, this, [this] {
+            m_phase = std::fmod(m_phase + 0.05, 1.0);
+            update();
+        });
+        m_timer.start();
+    }
+    void target(QWidget *w)
+    {
+        m_target = w;
+        follow();
+    }
+    void follow()
+    {
+        if (!m_target || !m_target->isVisible()) {
+            hide();
+            return;
+        }
+        const QRect r(m_target->mapTo(parentWidget(), QPoint(0, 0)), m_target->size());
+        setGeometry(r.adjusted(-14, -14, 14, 14));
+        show();
+        raise();
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        const double grow = 8 * m_phase;
+        QColor c("#F5C542");
+        c.setAlphaF(0.9 * (1 - m_phase));
+        p.setPen(QPen(c, 3));
+        p.setBrush(Qt::NoBrush);
+        p.drawRoundedRect(QRectF(rect()).adjusted(12 - grow, 12 - grow, -12 + grow, -12 + grow), 14, 14);
+        p.setPen(QPen(QColor("#F5C542"), 2));
+        p.drawRoundedRect(QRectF(rect()).adjusted(11, 11, -11, -11), 13, 13);
+    }
+
+private:
+    QPointer<QWidget> m_target;
+    QTimer m_timer;
+    double m_phase = 0;
+};
+
+} // namespace
+
+Card *MainWindow::buildTutorialCard()
+{
+    auto *card = new Card(nullptr, 18);
+    auto *lay = new QVBoxLayout(card);
+    lay->setContentsMargins(Card::Shadow + 18, Card::Shadow + 14, Card::Shadow + 16, Card::Shadow + 14);
+    lay->setSpacing(6);
+    m_tutStep = new QLabel;
+    m_tutStep->setProperty("role", "section");
+    lay->addWidget(m_tutStep);
+    m_tutTitle = new QLabel;
+    m_tutTitle->setStyleSheet("font-size: 13pt; font-weight: 700;");
+    lay->addWidget(m_tutTitle);
+    m_tutText = new QLabel;
+    m_tutText->setWordWrap(true);
+    m_tutText->setProperty("role", "subtitle");
+    lay->addWidget(m_tutText);
+    auto *buttons = new QHBoxLayout;
+    m_tutSkip = new QPushButton(tr("Passer le tutoriel"));
+    m_tutSkip->setProperty("variant", "ghost");
+    m_tutSkip->setCursor(Qt::PointingHandCursor);
+    connect(m_tutSkip, &QPushButton::clicked, this, [this] { endTutorial(); });
+    m_tutNext = new QPushButton(tr("Suivant"));
+    m_tutNext->setProperty("variant", "primary");
+    m_tutNext->setCursor(Qt::PointingHandCursor);
+    connect(m_tutNext, &QPushButton::clicked, this, [this] { showTutorialStep(m_tutorialStep + 1); });
+    buttons->addWidget(m_tutSkip);
+    buttons->addStretch();
+    buttons->addWidget(m_tutNext);
+    lay->addLayout(buttons);
+    m_tutRing = new HighlightRing(m_root);
+    m_tutRing->hide();
+    return card;
+}
+
+void MainWindow::startTutorial()
+{
+    if (!m_metro->city())
+        return;
+    m_tutStations = m_metro->stations().size();
+    showTutorialStep(0);
+}
+
+void MainWindow::endTutorial()
+{
+    m_tutorialStep = -1;
+    m_tutorialCard->hide();
+    m_tutRing->hide();
+    QSettings().setValue("tutorial/done", true);
+    layoutOverlays();
+}
+
+// Étapes : texte, élément désigné, condition qui fait passer à la suite (sinon bouton « Suivant »)
+void MainWindow::showTutorialStep(int step)
+{
+    struct Step {
+        QString title, text;
+        QWidget *target;
+        std::function<bool()> done;
+    };
+    auto activeLine = [this] {
+        for (const Line &l : m_metro->lines())
+            if (l.segmentCount() > 0)
+                return true;
+        return false;
+    };
+    const QVector<Step> steps = {
+        {tr("Bienvenue à %1 !").arg(m_metro->city()->name),
+         tr("Vous dirigez le futur métro de la ville. Sur la carte, le rouge montre les quartiers où des habitants "
+            "et des emplois attendent un métro : à vous de les desservir."),
+         nullptr, {}},
+        {tr("Construisez des stations"),
+         tr("Choisissez l'outil Station (touche 2) puis cliquez trois fois sur la carte, dans des zones rouges, "
+            "à environ 500 m les unes des autres. Chaque station dessert les rues à 5 minutes à pied."),
+         m_toolGroup->button(MapView::AddStation),
+         [this] { return m_metro->stations().size() >= m_tutStations + 3; }},
+        {tr("Tracez une ligne"),
+         tr("Cliquez sur « + » pour créer une ligne : l'outil Tracer s'active. Cliquez ensuite vos stations dans "
+            "l'ordre du parcours. Le tunnel est facturé au kilomètre."),
+         m_addLineBtn, activeLine},
+        {tr("Le métro roule !"),
+         tr("Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est "
+            "captée. Les boutons du calque (flamme, maison, mallette…) montrent habitants, emplois et charge."),
+         m_overlayGroup->button(MapView::Demand), {}},
+        {tr("Réglez vos trains"),
+         tr("La fiche de la ligne, à gauche, règle la longueur des rames (3 à 5 voitures) et leur nombre. "
+            "Une ligne saturée perd des voyageurs ; une ligne vide coûte pour rien."),
+         m_lineCard->isVisible() ? static_cast<QWidget *>(m_lineCard) : m_badgeScroll, {}},
+        {tr("Gérez votre budget"),
+         tr("Les voyageurs rapportent de l'argent chaque mois, les rames et les stations en coûtent. "
+            "Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien."),
+         m_financeBtn, {}},
+        {tr("À vous de jouer"),
+         tr("Les objectifs (trophée) rapportent des points et des primes. Accélérez le temps quand votre réseau "
+            "est prêt, et retrouvez l'aide complète avec F1. Bonne construction !"),
+         m_goalsBtn, {}},
+    };
+    if (step < 0 || step >= steps.size()) {
+        endTutorial();
+        return;
+    }
+    if (step > 0 && step > m_tutorialStep)
+        Audio::instance().play(Audio::Good);
+    m_tutorialStep = step;
+    m_tutorialDone = steps[step].done;
+    m_tutStep->setText(tr("Tutoriel · étape %1 sur %2").arg(step + 1).arg(steps.size()).toUpper());
+    m_tutTitle->setText(steps[step].title);
+    m_tutText->setText(steps[step].text);
+    m_tutNext->setVisible(!steps[step].done);
+    m_tutNext->setText(step + 1 == steps.size() ? tr("Terminer") : tr("Suivant"));
+    static_cast<HighlightRing *>(m_tutRing)->target(steps[step].target);
+    m_tutorialCard->show();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+void MainWindow::checkTutorial()
+{
+    if (m_tutorialStep < 0)
+        return;
+    static_cast<HighlightRing *>(m_tutRing)->follow();
+    if (m_tutorialDone && m_tutorialDone())
+        showTutorialStep(m_tutorialStep + 1);
+}
+
+void MainWindow::setLanguage(const QString &lang)
+{
+    QSettings().setValue("ui/language", lang);
+    const bool english = lang == QLatin1String("en");
+    if (QMessageBox::question(this, english ? QStringLiteral("Language") : QStringLiteral("Langue"),
+                              english ? QStringLiteral("The game must restart to switch to English. "
+                                                       "Your game is saved automatically. Restart now?")
+                                      : QStringLiteral("Le jeu doit redémarrer pour passer en français. "
+                                                       "La partie est sauvegardée automatiquement. Redémarrer ?"))
+        != QMessageBox::Yes)
+        return;
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), {});
+    close();
 }
 
 // ---------------------------------------------------------------------------
@@ -2176,7 +2402,7 @@ void MainWindow::refreshFinance()
 {
     if (!m_financeCard || !m_financeCard->isVisible())
         return;
-    const auto loc = QLocale(QLocale::French);
+    const auto loc = QLocale();
     auto meur = [loc](double v) {
         // assez de décimales pour distinguer les graduations (0,25 ; 2,5…) sans surcharger les grands montants
         const double a = std::abs(v);
@@ -2223,10 +2449,10 @@ void MainWindow::refreshFinance()
     if (m_financeRange > 0 && months.size() > m_financeRange)
         months = months.mid(months.size() - m_financeRange);
     const bool withYear = m_financeRange == 0 ? months.size() > 24 : m_financeRange > 24;
-    static const char *shortNames[] = {"janv.", "févr.", "mars", "avr.", "mai", "juin",
-                                       "juil.", "août", "sept.", "oct.", "nov.", "déc."};
-    static const char *longNames[] = {"Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-                                      "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"};
+    static const char *shortNames[] = {QT_TR_NOOP("janv."), QT_TR_NOOP("févr."), QT_TR_NOOP("mars"), QT_TR_NOOP("avr."), QT_TR_NOOP("mai"), QT_TR_NOOP("juin"),
+                                       QT_TR_NOOP("juil."), QT_TR_NOOP("août"), QT_TR_NOOP("sept."), QT_TR_NOOP("oct."), QT_TR_NOOP("nov."), QT_TR_NOOP("déc.")};
+    static const char *longNames[] = {QT_TR_NOOP("Janvier"), QT_TR_NOOP("Février"), QT_TR_NOOP("Mars"), QT_TR_NOOP("Avril"), QT_TR_NOOP("Mai"), QT_TR_NOOP("Juin"),
+                                      QT_TR_NOOP("Juillet"), QT_TR_NOOP("Août"), QT_TR_NOOP("Septembre"), QT_TR_NOOP("Octobre"), QT_TR_NOOP("Novembre"), QT_TR_NOOP("Décembre")};
     QStringList labels, tips;
     QVector<double> money, revenue, operating, invest, riders, capture, score, monthPts, goalPts, subsidy, debt, population;
     for (int i = 0; i < months.size(); ++i) {
@@ -2462,6 +2688,13 @@ void MainWindow::layoutOverlays()
             c->resize(w, h);
             c->move((W - w) / 2, (H - h) / 2);
         }
+    if (m_tutorialCard->isVisible()) {
+        const int w = std::min(470, W - 2 * kMargin);
+        m_tutorialCard->setFixedWidth(w);
+        m_tutorialCard->layout()->activate();
+        m_tutorialCard->setFixedHeight(m_tutorialCard->layout()->totalHeightForWidth(w));
+        m_tutorialCard->move((W - w) / 2, m_statsCard->geometry().bottom() - Card::Shadow + 70);
+    }
     if (m_missionEndCard->isVisible()) {
         const int w = std::min(520, W - 2 * kMargin);
         m_missionEndCard->setFixedWidth(w);
@@ -2493,8 +2726,11 @@ void MainWindow::layoutOverlays()
                        static_cast<QWidget *>(m_eventsCard), static_cast<QWidget *>(m_newsCard),
                        static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_scenarioCard),
                        static_cast<QWidget *>(m_achievementsCard), static_cast<QWidget *>(m_missionEndCard),
+                       static_cast<QWidget *>(m_tutorialCard),
                        static_cast<QWidget *>(m_toast)})
         w->raise();
+    if (m_tutRing && m_tutorialStep >= 0) // l'anneau du tutoriel au-dessus de tout
+        static_cast<HighlightRing *>(m_tutRing)->follow();
 }
 
 // ---------------------------------------------------------------------------
@@ -2558,7 +2794,7 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
                     goals << QStringLiteral("• %1").arg(g.title);
                 m_newsText->setText(tr("%1<br><br><b>Objectifs en %2 ans :</b><br>%3")
                                         .arg(def->description)
-                                        .arg(QLocale(QLocale::French).toString(def->months / 12.0))
+                                        .arg(QLocale().toString(def->months / 12.0))
                                         .arg(goals.join("<br>")));
                 m_newsCard->show();
                 m_newsTimer.start(15000);
@@ -2596,6 +2832,10 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
                   false, true); // le carillon « nouvelle ligne » accompagne déjà le chargement
     applyPendingView();
     Audio::instance().play(Audio::NewLine);
+    // première partie : tutoriel proposé automatiquement (nouvelle partie libre seulement)
+    if (!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
+        && m_metro->mission().id.isEmpty())
+        QTimer::singleShot(900, this, &MainWindow::startTutorial);
 }
 
 void MainWindow::extendMap(int side)
@@ -2616,7 +2856,7 @@ void MainWindow::extendMap(int side)
         m_toast->show(tr("Taille maximale atteinte (16 km de côté)"), true);
         return;
     }
-    static const char *names[] = {"le nord", "l'est", "le sud", "l'ouest"};
+    static const char *names[] = {QT_TR_NOOP("le nord"), QT_TR_NOOP("l'est"), QT_TR_NOOP("le sud"), QT_TR_NOOP("l'ouest")};
     m_toast->show(tr("Agrandissement vers %1…").arg(tr(names[side])));
     m_map->setExtendBusy(true);
     m_loader->extendCity(city, area);
@@ -2630,8 +2870,8 @@ void MainWindow::onCityExtended(QSharedPointer<CityData> city)
     m_map->setExtendBusy(false);
     Audio::instance().play(Audio::Good);
     m_toast->show(tr("Carte agrandie : %1 × %2 km · %3 bâtiments · ~%4 habitants")
-                      .arg(QLocale(QLocale::French).toString(city->area.width() / 1000, 'f', 0))
-                      .arg(QLocale(QLocale::French).toString(city->area.height() / 1000, 'f', 0))
+                      .arg(QLocale().toString(city->area.width() / 1000, 'f', 0))
+                      .arg(QLocale().toString(city->area.height() / 1000, 'f', 0))
                       .arg(count(city->buildings.size()))
                       .arg(count(city->totalResidents)),
                   false, true); // son « favorable » déjà joué
@@ -2650,6 +2890,8 @@ void MainWindow::tick()
         }
         if (m_frame % 15 == 0)
             refreshFinance();
+        if (m_frame % 10 == 0)
+            checkTutorial();
         if (m_frame % 30 == 0) {
             m_achievements->check(*m_metro);
             if (m_hadDebt && m_metro->debt() <= 0)
@@ -2753,22 +2995,23 @@ void MainWindow::refreshStats()
     m_moneyChip->setSub(tr("%1%2 /mois").arg(net >= 0 ? "+" : "").arg(money(net)),
                         net >= 0 ? Theme::Success : Theme::Danger);
     const int month = m_metro->month() - 1;
-    static const char *months[] = {"Janvier", "Février", "Mars",      "Avril",   "Mai",      "Juin",
-                                   "Juillet", "Août",    "Septembre", "Octobre", "Novembre", "Décembre"};
+    static const char *months[] = {QT_TR_NOOP("Janvier"), QT_TR_NOOP("Février"), QT_TR_NOOP("Mars"),      QT_TR_NOOP("Avril"),   QT_TR_NOOP("Mai"),      QT_TR_NOOP("Juin"),
+                                   QT_TR_NOOP("Juillet"), QT_TR_NOOP("Août"),    QT_TR_NOOP("Septembre"), QT_TR_NOOP("Octobre"), QT_TR_NOOP("Novembre"), QT_TR_NOOP("Décembre")};
     // « Semaine 1 » / « janvier, année 1 »
     m_dateChip->setValue(tr("Semaine %1").arg(m_metro->week()));
     const int clock = int(m_metro->clockMinutes());
     m_dateChip->setSub(tr("%1, année %2 · %3 h %4")
-                           .arg(tr(months[month % 12]).toLower())
+                           .arg(QLocale().language() == QLocale::French ? tr(months[month % 12]).toLower()
+                                                                    : tr(months[month % 12]))
                            .arg(month / 12 + 1)
                            .arg(clock / 60, 2, 10, QLatin1Char('0'))
                            .arg(clock % 60, 2, 10, QLatin1Char('0')));
     m_ridersChip->setValue(tr("%1 /h").arg(compact(m_metro->totalServed())));
     m_ridersChip->setSub(tr("sur %1 dépl./h").arg(compact(m_metro->totalPotential())));
-    m_captureChip->setValue(QStringLiteral("%1 %").arg(QLocale(QLocale::French).toString(m_metro->satisfaction() * 100, 'f', 1)));
+    m_captureChip->setValue(QStringLiteral("%1 %").arg(QLocale().toString(m_metro->satisfaction() * 100, 'f', 1)));
     m_captureChip->setSub(tr("demande captée"));
     const double res = m_metro->city() ? m_metro->city()->totalResidents : 0;
-    m_coverChip->setValue(res > 0 ? QStringLiteral("%1 %").arg(QLocale(QLocale::French).toString(
+    m_coverChip->setValue(res > 0 ? QStringLiteral("%1 %").arg(QLocale().toString(
                                         m_metro->coveredResidents() / res * 100, 'f', 1))
                                   : QStringLiteral("—"));
     m_coverChip->setSub(tr("habitants desservis"));
@@ -2863,7 +3106,7 @@ void MainWindow::refreshLineEditor()
     m_updating = false;
 
     const bool active = l->segmentCount() > 0;
-    const auto loc = QLocale(QLocale::French);
+    const auto loc = QLocale();
     m_kLength->setValue(active ? tr("%1 km").arg(loc.toString(l->length / 1000, 'f', 2)) : "—");
     m_kCycle->setValue(active ? tr("%1 min").arg(loc.toString(l->cycleMin, 'f', 0)) : "—");
     m_kHeadway->setValue(active ? tr("%1 min").arg(loc.toString(l->headwayMin, 'f', 1)) : "—");
@@ -3251,16 +3494,16 @@ void MainWindow::refreshResume()
         return;
     }
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
-    static const char *months[] = {"janvier", "février", "mars", "avril", "mai", "juin",
-                                   "juillet", "août", "septembre", "octobre", "novembre", "décembre"};
+    static const char *months[] = {QT_TR_NOOP("janvier"), QT_TR_NOOP("février"), QT_TR_NOOP("mars"), QT_TR_NOOP("avril"), QT_TR_NOOP("mai"), QT_TR_NOOP("juin"),
+                                   QT_TR_NOOP("juillet"), QT_TR_NOOP("août"), QT_TR_NOOP("septembre"), QT_TR_NOOP("octobre"), QT_TR_NOOP("novembre"), QT_TR_NOOP("décembre")};
     const int m = std::max(0, o.value("month").toInt(1) - 1);
     const QDateTime when = QDateTime::fromString(o.value("savedAt").toString(), Qt::ISODate);
     m_resumeLabel->setText(tr("<b>%1</b> — semaine %6, %2, année %3 · %4 M€<br>sauvegardée le %5")
                                .arg(o.value("cityName").toString(o.value("city").toString()).toHtmlEscaped())
                                .arg(tr(months[m % 12]))
                                .arg(m / 12 + 1)
-                               .arg(QLocale(QLocale::French).toString(o.value("money").toDouble(), 'f', 1))
-                               .arg(QLocale(QLocale::French).toString(when, "d MMMM 'à' HH:mm"))
+                               .arg(QLocale().toString(o.value("money").toDouble(), 'f', 1))
+                               .arg(QLocale().toString(when, "d MMMM 'à' HH:mm"))
                                .arg(o.value("week").toInt(1)));
     m_resumeBox->show();
 }

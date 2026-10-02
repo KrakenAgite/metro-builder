@@ -372,7 +372,7 @@ void LineEconomicsWidget::paintEvent(QPaintEvent *)
     p.setPen(QPen(kAxis, 1));
     p.drawLine(QPointF(zeroX, 26), QPointF(zeroX, height() - 2));
 
-    const auto loc = QLocale(QLocale::French);
+    const auto loc = QLocale();
     for (int i = 0; i < m_rows.size(); ++i) {
         const Row &r = m_rows[i];
         const double y = 28 + i * 30;

@@ -3,6 +3,10 @@
 #include "Audio.h"
 
 #include <QApplication>
+#include <QLibraryInfo>
+#include <QLocale>
+#include <QSettings>
+#include <QTranslator>
 #include <QTimer>
 
 #ifdef Q_OS_WIN
@@ -34,6 +38,20 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName("MetroBuilder");
     QApplication::setOrganizationName("MetroBuilder");
+
+    // langue : choisie dans ☰ → Langue, sinon celle du système (français par défaut, anglais sinon)
+    QString lang = QSettings().value("ui/language").toString();
+    if (lang.isEmpty())
+        lang = QLocale::system().language() == QLocale::French ? QStringLiteral("fr") : QStringLiteral("en");
+    QLocale::setDefault(lang == QLatin1String("en") ? QLocale(QLocale::English, QLocale::UnitedKingdom)
+                                                    : QLocale(QLocale::French, QLocale::France));
+    QTranslator gameTr, qtTr;
+    if (lang == QLatin1String("en") && gameTr.load(QStringLiteral(":/i18n/metrobuilder_en.qm")))
+        app.installTranslator(&gameTr);
+    if (lang == QLatin1String("fr")
+        && qtTr.load(QLocale(), QStringLiteral("qtbase"), QStringLiteral("_"),
+                     QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        app.installTranslator(&qtTr); // boutons Oui / Non des boîtes de dialogue
 #ifdef Q_OS_WIN
     registerSaveFileType();
 #endif

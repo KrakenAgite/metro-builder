@@ -35,7 +35,7 @@ MissionGoal noSaturation()
 
 QString num(double v)
 {
-    return QLocale(QLocale::French).toString(qRound(v));
+    return QLocale().toString(qRound(v));
 }
 
 // presets les plus proches d'une couleur donnée (pour les lignes importées)

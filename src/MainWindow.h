@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QMainWindow>
 #include <QTimer>
+#include <functional>
 
 class Metro;
 class MapView;
@@ -63,6 +64,12 @@ private:
     void exportMapImage();
     void enterSandbox();
     void refreshUndo();
+    Card *buildTutorialCard();
+    void startTutorial();
+    void showTutorialStep(int step);
+    void checkTutorial();
+    void endTutorial();
+    void setLanguage(const QString &lang);
     Card *buildScenarioCard();
     Card *buildAchievementsCard();
     Card *buildMissionEndCard();
@@ -191,6 +198,16 @@ private:
     QPushButton *m_repayBtn;
     LineEconomicsWidget *m_lineEco;
     int m_financeRange = 24; // mois affichés (0 = toute la partie)
+
+    // tutoriel
+    Card *m_tutorialCard;
+    QLabel *m_tutStep, *m_tutTitle, *m_tutText;
+    QPushButton *m_tutSkip, *m_tutNext;
+    QWidget *m_tutRing = nullptr;
+    int m_tutorialStep = -1;
+    int m_tutStations = 0;
+    std::function<bool()> m_tutorialDone;
+    QToolButton *m_addLineBtn;
 
     // vue en coupe
     Card *m_profileCard;

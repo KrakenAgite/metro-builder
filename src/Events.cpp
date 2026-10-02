@@ -31,7 +31,7 @@ double between(double lo, double hi)
 
 QString fmtMoney(double v)
 {
-    return QLocale(QLocale::French).toString(v, 'f', v < 10 ? 1 : 0);
+    return QLocale().toString(v, 'f', v < 10 ? 1 : 0);
 }
 
 } // namespace
@@ -338,8 +338,8 @@ bool Metro::startEvent(EventKind kind)
         e.text = tr("%1 ouvre %2 : +%3 habitants et +%4 emplois. Pensez à le desservir !")
                      .arg(d.name)
                      .arg(street.isEmpty() ? tr("dans la ville") : tr("près de %1").arg(street))
-                     .arg(QLocale(QLocale::French).toString(qRound(d.pop)))
-                     .arg(QLocale(QLocale::French).toString(qRound(d.jobs)));
+                     .arg(QLocale().toString(qRound(d.pop)))
+                     .arg(QLocale().toString(qRound(d.jobs)));
         buildGrid();
         break;
     }

@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.5.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.6.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -150,6 +150,15 @@ L'interface est une carte plein écran avec des panneaux flottants :
   ↔ viaduc : le viaduc coûte 45 % de moins (un pont 10 % de moins), un tunnel sous l'eau 60 % de plus ; mais
   un viaduc freine la densification des quartiers qu'il traverse. Les viaducs sont dessinés sur la carte
   (tablier et piliers).
+
+**Confort**
+- **Tutoriel** : proposé automatiquement à la première partie (et ☰ → Tutoriel) : 7 étapes guidées — construire
+  des stations, tracer une ligne, lire la carte, régler les trains, le budget, les objectifs. Un anneau doré
+  désigne le bouton à utiliser et l'étape suivante arrive d'elle-même quand l'action est faite.
+- **Langue** : ☰ → Langue / Language : français ou anglais (par défaut, la langue du système). Le jeu redémarre
+  pour changer de langue, la partie est sauvegardée automatiquement. Les textes sont dans
+  `translations/metrobuilder_en.ts` (à recompiler avec `lrelease translations/metrobuilder_en.ts`), le fichier
+  `.qm` est intégré à l'exécutable.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

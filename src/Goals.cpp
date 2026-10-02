@@ -61,7 +61,7 @@ bool exhausted(GoalKind k, int level)
 
 QString num(double v, int decimals = 0)
 {
-    return QLocale(QLocale::French).toString(v, 'f', decimals);
+    return QLocale().toString(v, 'f', decimals);
 }
 
 QString moneyText(double v)

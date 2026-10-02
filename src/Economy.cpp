@@ -138,7 +138,7 @@ bool Metro::takeLoan(double amount)
     m_money += amount;
     emit notice(tr("Emprunt de %1 M€ accordé : %2 M€ par mois pendant 10 ans")
                     .arg(amount, 0, 'f', 0)
-                    .arg(QLocale(QLocale::French).toString(loan.payment, 'f', 2)));
+                    .arg(QLocale().toString(loan.payment, 'f', 2)));
     emit networkChanged();
     return true;
 }
@@ -274,8 +274,8 @@ void Metro::growCity()
         if (m_popYearStart > 0 && gained > 0)
             emit notice(tr("Bilan de l'année %1 : la ville compte %2 habitants (+%3), surtout autour de vos stations")
                             .arg(closed / 12)
-                            .arg(QLocale(QLocale::French).toString(qRound(m_population)))
-                            .arg(QLocale(QLocale::French).toString(qRound(gained))));
+                            .arg(QLocale().toString(qRound(m_population)))
+                            .arg(QLocale().toString(qRound(gained))));
         m_popYearStart = m_population;
     }
 }

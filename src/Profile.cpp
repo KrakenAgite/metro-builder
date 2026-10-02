@@ -204,7 +204,7 @@ void ProfileWidget::mouseMoveEvent(QMouseEvent *e)
     const Station *a = m_metro->station(l->stops[seg]);
     const Station *b = m_metro->station(l->stops[(seg + 1) % l->stops.size()]);
     const double now = m_metro->segmentCost(*l, seg, up), other = m_metro->segmentCost(*l, seg, !up);
-    const auto loc = QLocale(QLocale::French);
+    const auto loc = QLocale();
     QString water;
     for (const auto &pt : m_points)
         if (pt.seg == seg && pt.water) {

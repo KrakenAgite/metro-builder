@@ -135,7 +135,7 @@ ParseResult parseOverpassJson(const QByteArray &data, const QString &name, doubl
     const QJsonArray elements = doc.object().value("elements").toArray();
     if (elements.isEmpty()) {
         const QString remark = doc.object().value("remark").toString();
-        res.error = remark.isEmpty() ? QStringLiteral("Aucune donnée OSM dans la réponse")
+        res.error = remark.isEmpty() ? QObject::tr("Aucune donnée OSM dans la réponse")
                                      : QStringLiteral("Overpass : %1").arg(remark);
         return res;
     }
@@ -147,7 +147,7 @@ ParseResult parseOverpassElements(const QJsonArray &elements, const QString &nam
 {
     ParseResult res;
     if (elements.isEmpty()) {
-        res.error = QStringLiteral("Aucune donnée OSM dans la réponse");
+        res.error = QObject::tr("Aucune donnée OSM dans la réponse");
         return res;
     }
     auto city = QSharedPointer<CityData>::create();
@@ -324,7 +324,7 @@ ParseResult parseOverpassElements(const QJsonArray &elements, const QString &nam
     city->bounds = bounds;
 
     if (city->buildings.isEmpty() && city->roads.isEmpty()) {
-        res.error = QStringLiteral("Aucune rue ni bâtiment trouvé");
+        res.error = QObject::tr("Aucune rue ni bâtiment trouvé");
         return res;
     }
     res.city = city;

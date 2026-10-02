@@ -57,7 +57,7 @@ TileResult decodeTile(const QByteArray &data)
     QJsonParseError perr;
     const QJsonDocument doc = QJsonDocument::fromJson(data, &perr);
     if (doc.isNull()) {
-        r.error = QStringLiteral("réponse invalide");
+        r.error = QObject::tr("réponse invalide");
         return r;
     }
     const QString remark = doc.object().value("remark").toString();
