@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.8.2_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.9.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -173,6 +173,12 @@ L'interface est une carte plein écran avec des panneaux flottants :
   d'événements), plus du tout fenêtre réduite ; fond, réseau et lumières sont gardés en cache et seules les rames
   sont redessinées à chaque image ; les rames disparaissent quand on dézoome fortement ; la musique utilise un
   sinus tabulé et ne calcule rien quand elle est coupée.
+
+**Menu** (bouton ☰) : un écran plein écran sur le fond de l'accueil, avec cinq rubriques — **Partie**
+(sauvegardes, sauvegarde automatique, annuler / rétablir, fichier Overpass), **Carte** (recadrer, jour / nuit,
+agrandir, export du plan, capture), **Défis** (scénarios, succès, tutoriel, métro réel, bac à sable),
+**Réglages** (son, performances, langue) et **Aide**. Le jeu est en pause tant que le menu est ouvert ;
+Échap ou « Reprendre » le referme. Tous les raccourcis clavier restent actifs.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

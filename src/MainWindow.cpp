@@ -8,6 +8,7 @@
 #include "Achievements.h"
 #include "TransitImport.h"
 #include "Profile.h"
+#include "GameMenu.h"
 
 #include <QAction>
 #include <QProcess>
@@ -97,6 +98,8 @@ QWidgetAction *volumeSlider(const QString &label, float value, std::function<voi
     l->addWidget(slider);
     auto *act = new QWidgetAction(parent);
     act->setDefaultWidget(w);
+    act->setProperty("label", label);              // repris par l'écran de menu
+    act->setProperty("value", qRound(value * 100));
     return act;
 }
 
@@ -430,71 +433,72 @@ Card *MainWindow::buildCityCard()
     connect(m_cityEdit, &QLineEdit::returnPressed, this, &MainWindow::loadCity);
 
     auto *menuBtn = iconButton(Icons::Menu, tr("Menu"), false, 36);
+    // Modèle du menu : cinq rubriques (sous-menus) affichées par l'écran de menu plein écran ;
+    // les actions gardent leurs raccourcis clavier même menu fermé
     auto *menu = new QMenu(menuBtn);
-    menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    menu->setAttribute(Qt::WA_TranslucentBackground);
-    menu->addAction(Icons::icon(Icons::File), tr("Ouvrir un fichier Overpass JSON…"), this, [this] {
+    QMenu *game = menu->addMenu(Icons::icon(Icons::Save), tr("Partie"));
+    QMenu *mapMenu = menu->addMenu(Icons::icon(Icons::Recenter), tr("Carte"));
+    QMenu *challenges = menu->addMenu(Icons::icon(Icons::Target), tr("Défis"));
+    QMenu *settingsMenu = menu->addMenu(Icons::icon(Icons::Sliders), tr("Réglages"));
+    QMenu *helpMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Aide"));
+    QAction *overpassAct = game->addAction(Icons::icon(Icons::File), tr("Ouvrir un fichier Overpass JSON…"), this, [this] {
         const QString path = QFileDialog::getOpenFileName(this, tr("Fichier Overpass JSON"), {}, "JSON (*.json)");
         if (!path.isEmpty()) {
             m_cityQuery.clear();
             m_loader->loadFile(path);
         }
     });
-    menu->addSeparator();
-    m_undoAction = menu->addAction(Icons::icon(Icons::Undo), tr("Annuler"), QKeySequence::Undo, this, [this] {
+    m_undoAction = game->addAction(Icons::icon(Icons::Undo), tr("Annuler"), QKeySequence::Undo, this, [this] {
         if (m_metro->city() && m_metro->undo()) {
             Audio::instance().play(Audio::Click);
             m_toast->show(tr("Modification annulée"), false, true);
         }
     });
-    m_redoAction = menu->addAction(Icons::icon(Icons::Redo), tr("Rétablir"), this, [this] {
+    m_redoAction = game->addAction(Icons::icon(Icons::Redo), tr("Rétablir"), this, [this] {
         if (m_metro->city() && m_metro->redo()) {
             Audio::instance().play(Audio::Click);
             m_toast->show(tr("Modification rétablie"), false, true);
         }
     });
     m_redoAction->setShortcuts({QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")});
-    menu->addSeparator();
-    menu->addAction(Icons::icon(Icons::Save), tr("Sauvegarder"), QKeySequence::Save, this,
-                    &MainWindow::saveGame);
-    menu->addAction(Icons::icon(Icons::Save), tr("Sauvegarder sous…"), QKeySequence("Ctrl+Shift+S"), this,
-                    &MainWindow::saveGameAs);
-    menu->addAction(Icons::icon(Icons::FolderOpen), tr("Charger une partie…"), QKeySequence::Open, this,
-                    &MainWindow::loadGame);
-    m_resumeAction = menu->addAction(Icons::icon(Icons::Play), tr("Reprendre la dernière partie"), this, [this] {
+    QAction *saveAct = game->addAction(Icons::icon(Icons::Save), tr("Sauvegarder"), QKeySequence::Save, this,
+                                       &MainWindow::saveGame);
+    QAction *saveAsAct = game->addAction(Icons::icon(Icons::Save), tr("Sauvegarder sous…"),
+                                         QKeySequence("Ctrl+Shift+S"), this, &MainWindow::saveGameAs);
+    QAction *loadAct = game->addAction(Icons::icon(Icons::FolderOpen), tr("Charger une partie…"), QKeySequence::Open,
+                                       this, &MainWindow::loadGame);
+    m_resumeAction = game->addAction(Icons::icon(Icons::Play), tr("Reprendre la dernière partie"), this, [this] {
         const QString path = latestAutosave();
         if (!path.isEmpty())
             openGame(path);
     });
-    QMenu *autoMenu = menu->addMenu(Icons::icon(Icons::Calendar), tr("Sauvegarde automatique"));
+    QMenu *autoMenu = game->addMenu(Icons::icon(Icons::Calendar), tr("Sauvegarde automatique"));
     autoMenu->setWindowFlags(autoMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     autoMenu->setAttribute(Qt::WA_TranslucentBackground);
     auto *autoGroup = new QActionGroup(this);
     m_autosaveMinutes = QSettings().value("autosave/minutes", 2).toInt();
     for (int minutes : {0, 1, 2, 5, 10}) {
-        QAction *a = autoMenu->addAction(minutes == 0 ? tr("Désactivée")
-                                         : minutes == 1 ? tr("Toutes les minutes")
-                                                        : tr("Toutes les %1 minutes").arg(minutes));
+        QAction *a = autoMenu->addAction(minutes == 0 ? tr("Désactivée") : tr("%1 min").arg(minutes));
         a->setCheckable(true);
         a->setChecked(minutes == m_autosaveMinutes);
         autoGroup->addAction(a);
         connect(a, &QAction::triggered, this, [this, minutes] { setAutosaveMinutes(minutes); });
     }
-    menu->addSeparator();
-    menu->addAction(Icons::icon(Icons::Image), tr("Exporter le plan du réseau (PNG, PDF)…"), QKeySequence("Ctrl+E"),
-                    this, &MainWindow::exportPlan);
-    menu->addAction(Icons::icon(Icons::Image), tr("Capture de la carte (PNG)…"), this, &MainWindow::exportMapImage);
-    m_sandboxAction = menu->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
+    QAction *exportAct = mapMenu->addAction(Icons::icon(Icons::Image), tr("Exporter le plan du réseau (PNG, PDF)…"),
+                                            QKeySequence("Ctrl+E"), this, &MainWindow::exportPlan);
+    QAction *captureAct = mapMenu->addAction(Icons::icon(Icons::Image), tr("Capture de la carte (PNG)…"), this,
+                                             &MainWindow::exportMapImage);
+    m_sandboxAction = challenges->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
                                       &MainWindow::enterSandbox);
-    menu->addAction(Icons::icon(Icons::Download), tr("Importer le métro réel de la ville"), this,
-                    &MainWindow::importRealNetwork);
-    menu->addSeparator();
-    menu->addAction(Icons::icon(Icons::Target), tr("Scénarios…"), this, &MainWindow::showScenarios);
-    menu->addAction(Icons::icon(Icons::Trophy), tr("Succès…"), this, &MainWindow::showAchievements);
-    menu->addSeparator();
-    menu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"), m_map,
-                    &MapView::fitCity);
-    QAction *nightAct = menu->addAction(Icons::icon(Icons::Moon), tr("Cycle jour / nuit"));
+    QAction *importAct = challenges->addAction(Icons::icon(Icons::Download), tr("Importer le métro réel de la ville"),
+                                               this, &MainWindow::importRealNetwork);
+    QAction *scenariosAct = challenges->addAction(Icons::icon(Icons::Target), tr("Scénarios…"), this,
+                                                  &MainWindow::showScenarios);
+    QAction *achievementsAct = challenges->addAction(Icons::icon(Icons::Trophy), tr("Succès…"), this,
+                                                     &MainWindow::showAchievements);
+    QAction *fitAct = mapMenu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"),
+                                         m_map, &MapView::fitCity);
+    QAction *nightAct = mapMenu->addAction(Icons::icon(Icons::Moon), tr("Cycle jour / nuit"));
     nightAct->setCheckable(true);
     nightAct->setChecked(QSettings().value("map/daynight", true).toBool());
     m_map->setDayNight(nightAct->isChecked());
@@ -504,13 +508,13 @@ Card *MainWindow::buildCityCard()
         m_map->setDayNight(on);
         QSettings().setValue("map/daynight", on);
     });
-    QMenu *extend = menu->addMenu(Icons::icon(Icons::Plus), tr("Agrandir la carte"));
+    QMenu *extend = mapMenu->addMenu(Icons::icon(Icons::Plus), tr("Agrandir la carte"));
     extend->setWindowFlags(extend->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     extend->setAttribute(Qt::WA_TranslucentBackground);
     const QString sides[4] = {tr("Vers le nord"), tr("Vers l'est"), tr("Vers le sud"), tr("Vers l'ouest")};
     for (int side = 0; side < 4; ++side)
         extend->addAction(tr("%1 (+1 km)").arg(sides[side]), this, [this, side] { extendMap(side); });
-    QMenu *sound = menu->addMenu(Icons::icon(Icons::Speaker), tr("Son"));
+    QMenu *sound = settingsMenu->addMenu(Icons::icon(Icons::Speaker), tr("Son"));
     sound->setWindowFlags(sound->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     sound->setAttribute(Qt::WA_TranslucentBackground);
     QAction *musicAct = sound->addAction(tr("Musique d'ambiance"));
@@ -538,7 +542,7 @@ Card *MainWindow::buildCityCard()
         Audio::instance().play(Audio::Click);
     }, sound));
     // Performances : qualité graphique, images par seconde, pause en arrière-plan, indicateur
-    QMenu *perf = menu->addMenu(Icons::icon(Icons::Gauge), tr("Performances"));
+    QMenu *perf = settingsMenu->addMenu(Icons::icon(Icons::Gauge), tr("Performances"));
     perf->setWindowFlags(perf->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     perf->setAttribute(Qt::WA_TranslucentBackground);
     {
@@ -592,7 +596,7 @@ Card *MainWindow::buildCityCard()
             QSettings().setValue("perf/overlay", on);
         });
     }
-    QMenu *langMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Langue / Language"));
+    QMenu *langMenu = settingsMenu->addMenu(Icons::icon(Icons::Info), tr("Langue / Language"));
     langMenu->setWindowFlags(langMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     langMenu->setAttribute(Qt::WA_TranslucentBackground);
     auto *langGroup = new QActionGroup(this);
@@ -606,17 +610,60 @@ Card *MainWindow::buildCityCard()
         const QString c = code;
         connect(a, &QAction::triggered, this, [this, c] { setLanguage(c); });
     }
-    menu->addAction(Icons::icon(Icons::Play), tr("Tutoriel"), this, [this] {
+    QAction *tutorialAct = challenges->addAction(Icons::icon(Icons::Play), tr("Tutoriel"), this, [this] {
         if (m_metro->city())
             startTutorial();
         else
             m_toast->show(tr("Chargez d'abord une ville pour suivre le tutoriel"));
     });
-    menu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
-                    &MainWindow::showHelp);
-    addActions(menu->actions()); // raccourcis actifs même menu fermé
-    menuBtn->setMenu(menu);
-    menuBtn->setPopupMode(QToolButton::InstantPopup);
+    helpMenu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
+                        &MainWindow::showHelp);
+
+    // ordre d'affichage dans chaque rubrique (nullptr = séparation)
+    auto order = [](QMenu *m, const QList<QAction *> &wanted) {
+        for (QAction *a : m->actions())
+            m->removeAction(a);
+        for (QAction *a : wanted) {
+            if (a)
+                m->addAction(a);
+            else
+                m->addSeparator();
+        }
+    };
+    order(game, {saveAct, saveAsAct, loadAct, m_resumeAction, autoMenu->menuAction(), nullptr, m_undoAction,
+                 m_redoAction, nullptr, overpassAct});
+    order(mapMenu, {fitAct, nightAct, extend->menuAction(), nullptr, exportAct, captureAct});
+    order(challenges, {scenariosAct, achievementsAct, tutorialAct, nullptr, importAct, m_sandboxAction});
+    // raccourcis actifs même menu fermé (actions des rubriques et de leurs sous-menus)
+    std::function<void(QMenu *)> registerShortcuts = [&](QMenu *m) {
+        for (QAction *a : m->actions()) {
+            if (a->menu())
+                registerShortcuts(a->menu());
+            else if (!a->shortcut().isEmpty())
+                addAction(a);
+        }
+    };
+    registerShortcuts(menu);
+    m_gameMenu = new GameMenu(menu, m_root);
+    connect(m_gameMenu, &GameMenu::opened, this, [this] {
+        // le jeu se met en pause pendant le menu, et reprend ensuite à sa vitesse
+        if (m_metro->city() && m_speed > 0) {
+            m_speedBeforeMenu = qRound(m_speed);
+            m_speedGroup->button(0)->click();
+        }
+    });
+    connect(m_gameMenu, &GameMenu::closed, this, [this] {
+        if (m_speedBeforeMenu > 0 && m_speed == 0 && !m_decisionCard->isVisible())
+            m_speedGroup->button(m_speedBeforeMenu)->click();
+        m_speedBeforeMenu = -1;
+    });
+    connect(menuBtn, &QToolButton::clicked, this, [this] {
+        m_gameMenu->open(m_metro->city() ? tr("%1 · semaine %2, année %3")
+                                               .arg(m_metro->city()->name)
+                                               .arg(m_metro->week())
+                                               .arg((m_metro->month() - 1) / 12 + 1)
+                                         : tr("Menu"));
+    });
 
     auto *row = new QHBoxLayout;
     row->setContentsMargins(0, 0, 0, 0);
@@ -1300,6 +1347,10 @@ void MainWindow::buildShortcuts()
         m_speedGroup->button(target)->click();
     });
     shortcut(QKeySequence(Qt::Key_Escape), [this] {
+        if (m_gameMenu->isOpen()) {
+            m_gameMenu->close();
+            return;
+        }
         if (m_selectedStation >= 0) {
             selectStation(-1);
             m_map->setSelectedStation(-1);
@@ -2850,6 +2901,11 @@ void MainWindow::layoutOverlays()
                        static_cast<QWidget *>(m_tutorialCard),
                        static_cast<QWidget *>(m_toast)})
         w->raise();
+    if (m_gameMenu && m_gameMenu->isVisible()) { // menu plein écran : par-dessus tous les panneaux
+        m_gameMenu->setGeometry(m_root->rect());
+        m_gameMenu->raise();
+        m_toast->raise();
+    }
     if (m_tutRing && m_tutorialStep >= 0) // l'anneau du tutoriel au-dessus de tout
         static_cast<HighlightRing *>(m_tutRing)->follow();
 }

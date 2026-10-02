@@ -19,6 +19,7 @@ class LineEconomicsWidget;
 class StopDelegate;
 class Toast;
 class ProfileWidget;
+class GameMenu;
 class TransitImporter;
 class Achievements;
 struct ScenarioDef;
@@ -239,6 +240,8 @@ private:
     QHBoxLayout *m_endButtons;
     QLabel *m_goalsSection;
     bool m_hadDebt = false;
+    GameMenu *m_gameMenu = nullptr;
+    int m_speedBeforeMenu = -1;
     int m_frameInterval = 33;       // ms entre deux images (limite d'images par seconde)
     bool m_bgPause = false;         // pause automatique quand la fenêtre passe en arrière-plan
     int m_speedBeforeBackground = -1;

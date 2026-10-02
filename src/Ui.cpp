@@ -13,6 +13,41 @@
 
 namespace Theme {
 
+void paintBackdrop(QPainter &p, const QRect &r)
+{
+    QLinearGradient bg(0, 0, r.width(), r.height());
+    bg.setColorAt(0, QColor("#0E1116"));
+    bg.setColorAt(1, QColor("#1A2130"));
+    p.fillRect(r, bg);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setPen(QPen(QColor(255, 255, 255, 10), 1));
+    for (int x = 0; x < r.width(); x += 40)
+        p.drawLine(x, 0, x, r.height());
+    for (int y = 0; y < r.height(); y += 40)
+        p.drawLine(0, y, r.width(), y);
+    const double w = r.width(), h = r.height();
+    const struct {
+        QColor c;
+        QVector<QPointF> pts;
+    } deco[] = {
+        {QColor("#FFCD00"), {{0, h * 0.30}, {w * 0.35, h * 0.30}, {w * 0.55, h * 0.50}, {w, h * 0.50}}},
+        {QColor("#4C8DFF"), {{w * 0.25, 0}, {w * 0.25, h * 0.55}, {w * 0.45, h * 0.75}, {w * 0.45, h}}},
+        {QColor("#CF009E"), {{w * 0.70, 0}, {w * 0.70, h * 0.35}, {w * 0.85, h * 0.50}, {w * 0.85, h}}},
+        {QColor("#6ECA97"), {{0, h * 0.80}, {w * 0.60, h * 0.80}, {w * 0.75, h * 0.65}, {w, h * 0.65}}},
+    };
+    for (const auto &d : deco) {
+        QColor c = d.c;
+        c.setAlpha(55);
+        p.setPen(QPen(c, 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p.drawPolyline(d.pts.data(), d.pts.size());
+        p.setPen(QPen(QColor(255, 255, 255, 60), 3));
+        p.setBrush(QColor("#0E1116"));
+        for (int i = 1; i + 1 < d.pts.size(); ++i)
+            p.drawEllipse(d.pts[i], 8, 8);
+    }
+}
+
+
 QColor loadColor(double ratio)
 {
     return ratio < 0.7 ? Success : ratio < 1.0 ? Warning : Danger;

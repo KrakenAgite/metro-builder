@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QToolButton>
 
+class QPainter;
 class QProgressBar;
 class QGraphicsOpacityEffect;
 class QPropertyAnimation;
@@ -21,6 +22,7 @@ inline const QColor Danger("#F04D5E");
 
 void apply();                       // style Fusion + palette sombre + feuille de style globale
 QColor loadColor(double ratio);     // vert / orange / rouge selon charge/capacité
+void paintBackdrop(QPainter &p, const QRect &r); // fond de l'accueil : dégradé sombre, trame et lignes stylisées
 } // namespace Theme
 
 // Panneau flottant arrondi et translucide, avec ombre douce peinte à la main.

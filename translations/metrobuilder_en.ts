@@ -187,6 +187,29 @@
     </message>
 </context>
 <context>
+    <name>GameMenu</name>
+    <message>
+        <source>Metro Builder</source>
+        <translation>Metro Builder</translation>
+    </message>
+    <message>
+        <source>Fermer le menu — Échap</source>
+        <translation>Close the menu — Esc</translation>
+    </message>
+    <message>
+        <source>Reprendre</source>
+        <translation>Resume</translation>
+    </message>
+    <message>
+        <source>Activé</source>
+        <translation>On</translation>
+    </message>
+    <message>
+        <source>Désactivé</source>
+        <translation>Off</translation>
+    </message>
+</context>
+<context>
     <name>LineEconomicsWidget</name>
     <message>
         <source>Ligne</source>
@@ -330,14 +353,6 @@
     <message>
         <source>Désactivée</source>
         <translation>Off</translation>
-    </message>
-    <message>
-        <source>Toutes les minutes</source>
-        <translation>Every minute</translation>
-    </message>
-    <message>
-        <source>Toutes les %1 minutes</source>
-        <translation>Every %1 minutes</translation>
     </message>
     <message>
         <source>Exporter le plan du réseau (PNG, PDF)…</source>
@@ -1770,6 +1785,26 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Nouvelle ligne %1</source>
         <translation>New line %1</translation>
+    </message>
+    <message>
+        <source>Partie</source>
+        <translation>Game</translation>
+    </message>
+    <message>
+        <source>Carte</source>
+        <translation>Map</translation>
+    </message>
+    <message>
+        <source>Défis</source>
+        <translation>Challenges</translation>
+    </message>
+    <message>
+        <source>Réglages</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <source>%1 · semaine %2, année %3</source>
+        <translation>%1 · week %2, year %3</translation>
     </message>
 </context>
 <context>
