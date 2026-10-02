@@ -1159,11 +1159,15 @@ void MapView::drawHud(QPainter &p)
     }
     if (m_schematic)
         hint = tr("Plan schématique · M pour revenir à la carte · cliquez une station pour l'inspecter");
+    // fermeture de nuit : la bulle l'annonce, sinon on croit que les rames ont disparu
+    const bool closed = m_metro->closedNow();
+    if (closed)
+        hint = tr("Nuit : métro fermé de 1 h à 5 h — les rames reprennent à 5 h");
     const QFontMetrics fm = p.fontMetrics();
     const double hintW = std::min<double>(width() - 40, fm.horizontalAdvance(hint) + 32);
     const QRectF box((width() - hintW) / 2, height() - m_insetBottom - 44, hintW, 30);
     drawPanel(p, box, 15);
-    p.setPen(kText);
+    p.setPen(closed ? QColor("#F5C542") : kText);
     p.drawText(box.adjusted(16, 0, -16, 0), Qt::AlignCenter | Qt::TextSingleLine,
                fm.elidedText(hint, Qt::ElideRight, int(box.width() - 32)));
 

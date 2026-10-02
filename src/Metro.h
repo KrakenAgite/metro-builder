@@ -367,7 +367,10 @@ public:
     // horloge de la journée (minutes depuis minuit) : la partie commence à 7 h, 1 s réelle = 1 min à ×1
     double clockMinutes() const { return std::fmod(m_simMinutes + 7 * 60, 1440.0); }
     // part des rames en circulation à cette heure : pointe, heures creuses, fermeture de nuit (1 h – 5 h)
-    static double serviceAt(double clockMinutes, const Line &l);
+    double serviceAt(double clockMinutes, const Line &l) const;
+    // fermeture de nuit (1 h – 5 h) : seulement avec le cycle jour / nuit
+    void setNightClosure(bool on) { m_nightClosure = on; }
+    bool closedNow() const { return m_nightClosure && clockMinutes() >= 60 && clockMinutes() < 300; }
     const QVector<MonthRecord> &history() const { return m_history; } // mois clos
     MonthRecord currentMonth() const;                                 // mois en cours (partiel)
     double totalInvested() const { return m_totalInvested; }
@@ -555,6 +558,7 @@ private:
     double m_initialPopulation = 0;
     Mission m_mission;
     bool m_freeBuild = false;
+    bool m_nightClosure = true;
     QHash<qint64, double> m_denomCache; // attractivité des destinations vue de chaque position de station           // import du réseau réel : rien n'est facturé
     QVector<QPair<QRectF, QPolygonF>> m_waterIndex; // surfaces d'eau (boîte englobante, polygone)
     QVector<QPair<QRectF, QPolygonF>> m_riverIndex; // cours d'eau linéaires

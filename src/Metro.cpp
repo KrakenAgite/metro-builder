@@ -1233,10 +1233,10 @@ double Metro::lineMonthlyCost(const Line &l) const
            * maintenanceCostFactor();
 }
 
-double Metro::serviceAt(double minutes, const Line &l)
+double Metro::serviceAt(double minutes, const Line &l) const
 {
     const double h = minutes / 60;
-    if (h >= 1 && h < 5)
+    if (m_nightClosure && h >= 1 && h < 5)
         return 0; // métro fermé la nuit
     const bool peak = (h >= 7 && h < 9.5) || (h >= 16.5 && h < 19.5);
     return peak ? 1.0 : std::max(1.0 / std::max(1, l.trains), l.offPeak);

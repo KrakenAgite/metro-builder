@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.8.1_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.8.2_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -145,7 +145,8 @@ L'interface est une carte plein écran avec des panneaux flottants :
 - **Jour et nuit** : l'horloge (affichée sous la date) avance d'une minute par seconde à ×1, la partie commence
   à 7 h. Au crépuscule la carte bleuit puis s'assombrit, les fenêtres s'allument et les stations rayonnent ;
   le métro ferme de 1 h à 5 h, roule à pleine fréquence aux heures de pointe (7 h – 9 h 30, 16 h 30 – 19 h 30)
-  et selon le réglage « heures creuses » de chaque ligne le reste du temps. Désactivable dans ☰.
+  et selon le réglage « heures creuses » de chaque ligne le reste du temps ; pendant la fermeture, la bulle
+  d'aide du bas l'annonce en jaune. Désactivable dans ☰ (le métro ne ferme alors plus la nuit).
 - **Vue en coupe** (fiche de ligne → « Vue en coupe ») : profil de la ligne avec le sol, les cours d'eau, les
   tunnels (12 m, 26 m sous un fleuve) et les viaducs sur piliers. Un clic sur un inter-station bascule tunnel
   ↔ viaduc : le viaduc coûte 45 % de moins (un pont 10 % de moins), un tunnel sous l'eau 60 % de plus ; mais

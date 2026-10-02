@@ -498,7 +498,9 @@ Card *MainWindow::buildCityCard()
     nightAct->setCheckable(true);
     nightAct->setChecked(QSettings().value("map/daynight", true).toBool());
     m_map->setDayNight(nightAct->isChecked());
+    m_metro->setNightClosure(nightAct->isChecked());
     connect(nightAct, &QAction::toggled, this, [this](bool on) {
+        m_metro->setNightClosure(on); // sans cycle jour / nuit, le métro ne ferme plus la nuit
         m_map->setDayNight(on);
         QSettings().setValue("map/daynight", on);
     });

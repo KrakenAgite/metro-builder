@@ -1886,6 +1886,10 @@ The current network is replaced; imported stations and lines are free.</translat
         <source>%1 img/s · dessin %2 ms</source>
         <translation>%1 fps · draw %2 ms</translation>
     </message>
+    <message>
+        <source>Nuit : métro fermé de 1 h à 5 h — les rames reprennent à 5 h</source>
+        <translation>Night: the metro is closed from 1 am to 5 am — trains resume at 5 am</translation>
+    </message>
 </context>
 <context>
     <name>Metro</name>
