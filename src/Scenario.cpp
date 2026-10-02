@@ -276,7 +276,7 @@ void Metro::importNetwork(const QVector<ImportedLine> &imported)
         Line &added = m_lines.last();
         computeLineGeometry(added);
         added.trains = std::clamp(int(std::ceil(added.length / 1500.0)), 2, 12);
-        added.paidLength = lineLength(added);
+        added.paidLength = trackUnits(added);
     }
     // stations isolées (lignes écartées) : retirées
     m_stations.erase(std::remove_if(m_stations.begin(), m_stations.end(),

@@ -56,6 +56,7 @@ Metro::Metro(QObject *parent)
 void Metro::setCity(QSharedPointer<CityData> city)
 {
     m_city = city;
+    buildWaterIndex();
     buildGrid();
     reset();
 }
@@ -64,6 +65,7 @@ void Metro::updateCity(QSharedPointer<CityData> city)
 {
     // le repère (lat0/lon0) est inchangé : stations et tracés restent valides
     m_city = city;
+    buildWaterIndex();
     const double before = m_population;
     buildGrid();
     m_popYearStart += m_population - before; // habitants de la zone ajoutée : pas de la croissance
@@ -600,10 +602,10 @@ TrackHit Metro::trackAt(const QPointF &world, double radius, int preferLine) con
     return best;
 }
 
-// Facture (ou rembourse) la variation de longueur de tunnel d'une ligne.
+// Facture (ou rembourse) la variation du tracé d'une ligne (tunnel, viaduc, passages sous l'eau).
 void Metro::settleTrack(Line &l)
 {
-    const double len = lineLength(l);
+    const double len = trackUnits(l);
     const double diffKm = (len - l.paidLength) / 1000.0;
     if (diffKm > 0)
         charge(diffKm * Rules::TrackCostKm * buildCostFactor());
@@ -1220,14 +1222,24 @@ double Metro::lineMonthlyCost(const Line &l) const
            * maintenanceCostFactor();
 }
 
+double Metro::serviceAt(double minutes, const Line &l)
+{
+    const double h = minutes / 60;
+    if (h >= 1 && h < 5)
+        return 0; // métro fermé la nuit
+    const bool peak = (h >= 7 && h < 9.5) || (h >= 16.5 && h < 19.5);
+    return peak ? 1.0 : std::max(1.0 / std::max(1, l.trains), l.offPeak);
+}
+
 QVector<TrainVis> Metro::trains(double wagonSpacing) const
 {
     QVector<TrainVis> out;
     for (const Line &l : m_lines) {
         if (l.legs.isEmpty() || l.cycleMin <= 0 || lineCapacityFactor(l.id) <= 0) // ligne en grève : rames au dépôt
             continue;
-        for (int i = 0; i < l.trains; ++i) {
-            const double phase = std::fmod(m_simMinutes + i * l.cycleMin / l.trains, l.cycleMin);
+        const int running = int(std::round(l.trains * serviceAt(clockMinutes(), l)));
+        for (int i = 0; i < running; ++i) {
+            const double phase = std::fmod(m_simMinutes + i * l.cycleMin / running, l.cycleMin);
             auto it = std::upper_bound(l.legs.begin(), l.legs.end(), phase,
                                        [](double t, const Leg &g) { return t < g.t0; });
             const Leg &g = *(it == l.legs.begin() ? it : it - 1);
@@ -1289,7 +1301,12 @@ QJsonObject Metro::networkJson() const
         ln << QJsonObject{{"id", l.id},         {"code", l.code},     {"name", l.name},     {"color", l.color.name()},
                           {"wagons", l.wagons}, {"trains", l.trains}, {"loop", l.loop},
                           {"paid", l.paidLength}, {"stops", stops}, {"via", viaJson(l)},
-                          {"offpeak", l.offPeak}, {"age", l.stockAge}};
+                          {"offpeak", l.offPeak}, {"age", l.stockAge}, {"elevated", [&] {
+                              QJsonArray a;
+                              for (quint64 k : l.elevated)
+                                  a << QJsonArray{int(k >> 32), int(k & 0xffffffff)};
+                              return a;
+                          }()}};
     }
     return QJsonObject{{"stations", st}, {"lines", ln}, {"nextStation", m_nextStationId}, {"nextLine", m_nextLineId}};
 }
@@ -1346,6 +1363,11 @@ void Metro::loadNetwork(const QJsonObject &o)
         l.paidLength = lo.value("paid").toDouble();
         l.offPeak = std::clamp(lo.value("offpeak").toDouble(1), 0.5, 1.0);
         l.stockAge = lo.value("age").toDouble(0);
+        for (const QJsonValue &ev : lo.value("elevated").toArray()) {
+            const QJsonArray pair = ev.toArray();
+            if (pair.size() == 2)
+                l.elevated.insert(pairKey(pair[0].toInt(), pair[1].toInt()));
+        }
         for (const QJsonValue &vv : lo.value("via").toArray()) {
             const QJsonObject vo = vv.toObject();
             const QJsonArray xy = vo.value("pts").toArray();
@@ -1358,6 +1380,9 @@ void Metro::loadNetwork(const QJsonObject &o)
         for (const QJsonValue &sv : lo.value("stops").toArray())
             if (stationIndex(sv.toInt()) >= 0)
                 l.stops << sv.toInt();
+        // ancienne sauvegarde (avant les viaducs) : le tracé est considéré comme payé au nouveau barème
+        if (!lo.contains("elevated"))
+            l.paidLength = trackUnits(l);
         m_lines << l;
     }
     m_nextStationId = o.value("nextStation").toInt(m_stations.size() + 1);

@@ -229,11 +229,33 @@ void Metro::growCity()
         return;
     m_baseGrowth = std::min(1.5, m_baseGrowth * 1.0005);
     const int n = m_grid.w * m_grid.h;
+    // nuisances des viaducs : la ville se densifie peu le long des voies aériennes (150 m)
+    QSet<int> noisy;
+    for (const Line &l : m_lines)
+        for (int k = 0; k < l.paths.size(); ++k) {
+            if (!segmentElevated(l, k))
+                continue;
+            const SegPath &sp = l.paths[k];
+            for (double s = 0; s <= sp.length(); s += 50) {
+                const QPointF p = sp.pointAt(s);
+                for (int dy = -2; dy <= 2; ++dy)
+                    for (int dx = -2; dx <= 2; ++dx) {
+                        const int cx = int((p.x() - m_grid.origin.x()) / m_grid.cell) + dx;
+                        const int cy = int((p.y() - m_grid.origin.y()) / m_grid.cell) + dy;
+                        if (cx >= 0 && cy >= 0 && cx < m_grid.w && cy < m_grid.h
+                            && std::hypot(m_grid.center(cy * m_grid.w + cx).x() - p.x(),
+                                          m_grid.center(cy * m_grid.w + cx).y() - p.y()) < 150)
+                            noisy.insert(cy * m_grid.w + cx);
+                    }
+            }
+        }
     bool changed = false;
     for (int c = 0; c < n; ++c) {
         if (m_grid.pop[c] + m_grid.jobs[c] <= 0)
             continue;
-        const double g = 0.004 * m_grid.servedFrac[c] + 0.001 * m_grid.coverage[c];
+        double g = 0.004 * m_grid.servedFrac[c] + 0.001 * m_grid.coverage[c];
+        if (noisy.contains(c))
+            g *= 0.3;
         if (g < 1e-5)
             continue;
         float &f = m_growth[cellKey(m_grid.center(c))];

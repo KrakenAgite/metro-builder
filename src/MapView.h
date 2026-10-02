@@ -34,6 +34,9 @@ public:
     // espace occupé par les panneaux flottants en haut et en bas
     void setInsets(int top, int bottom);
     void setDarkMap(bool dark);
+    void setDayNight(bool on);
+    bool dayNight() const { return m_dayNight; }
+    double darkness() const; // 0 en plein jour, 1 en pleine nuit
     void setSchematic(bool on);
     bool schematic() const { return m_schematic; }
     Overlay overlay() const { return m_overlay; }
@@ -85,6 +88,7 @@ private:
     void drawTrains(QPainter &p);
     void drawHud(QPainter &p);
     void drawLegend(QPainter &p);
+    void drawNight(QPainter &p, double dark);
     void drawProbe(QPainter &p);
     void drawExtendButtons(QPainter &p);
     void drawEvents(QPainter &p);
@@ -107,6 +111,8 @@ private:
     QVector<Shape> m_roads[6];
     QVector<Shape> m_buildings[6];
     QVector<Shape> m_water, m_parks, m_forests, m_rivers;
+    QVector<QPointF> m_lights; // fenêtres éclairées la nuit (échantillon de bâtiments)
+    bool m_dayNight = true;
 
     QPixmap m_static;
     double m_staticScale = 0;

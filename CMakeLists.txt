@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(MetroBuilder VERSION 1.4.1 LANGUAGES CXX)
+project(MetroBuilder VERSION 1.5.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,6 +19,8 @@ add_executable(metrobuilder
     src/Route.cpp
     src/Economy.cpp
     src/Scenario.cpp
+    src/Section.cpp
+    src/Profile.h src/Profile.cpp
     src/TransitImport.h src/TransitImport.cpp
     src/Achievements.h src/Achievements.cpp
     src/MapView.h src/MapView.cpp

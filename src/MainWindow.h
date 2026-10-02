@@ -17,6 +17,7 @@ class ChartWidget;
 class LineEconomicsWidget;
 class StopDelegate;
 class Toast;
+class ProfileWidget;
 class TransitImporter;
 class Achievements;
 struct ScenarioDef;
@@ -190,6 +191,12 @@ private:
     QPushButton *m_repayBtn;
     LineEconomicsWidget *m_lineEco;
     int m_financeRange = 24; // mois affichés (0 = toute la partie)
+
+    // vue en coupe
+    Card *m_profileCard;
+    QLabel *m_profileTitle;
+    ProfileWidget *m_profile;
+    QPushButton *m_profileBtn;
 
     // itinéraire
     Card *m_routeCard;

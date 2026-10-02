@@ -7,6 +7,7 @@
 #include "Audio.h"
 #include "Achievements.h"
 #include "TransitImport.h"
+#include "Profile.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -176,13 +177,39 @@ MainWindow::MainWindow(QWidget *parent)
     m_financeCard = buildFinanceCard();
     m_goalsCard = buildGoalsCard();
     m_routeCard = buildRouteCard();
+    {
+        // vue en coupe de la ligne sélectionnée
+        m_profileCard = new Card;
+        auto *pl = new QVBoxLayout(m_profileCard);
+        pl->setContentsMargins(Card::Shadow + 14, Card::Shadow + 8, Card::Shadow + 10, Card::Shadow + 8);
+        pl->setSpacing(4);
+        auto *ph = new QHBoxLayout;
+        m_profileTitle = new QLabel;
+        m_profileTitle->setStyleSheet("font-weight: 700;");
+        ph->addWidget(m_profileTitle);
+        auto *hint = caption(tr("Survolez un tronçon pour son coût · clic : tunnel ↔ viaduc (viaduc ≈ 45 % moins cher, "
+                                "mais il freine la densification alentour)"));
+        ph->addWidget(hint, 1);
+        auto *close = iconButton(Icons::Close, tr("Fermer la vue en coupe"), false, 28);
+        connect(close, &QToolButton::clicked, this, [this] { m_profileBtn->setChecked(false); });
+        ph->addWidget(close);
+        pl->addLayout(ph);
+        m_profile = new ProfileWidget(m_metro);
+        pl->addWidget(m_profile, 1);
+        connect(m_profile, &ProfileWidget::segmentClicked, this, [this](int seg) {
+            if (const Line *l = m_metro->line(m_currentLine)) {
+                m_metro->setSegmentElevated(l->id, seg, !m_metro->segmentElevated(*l, seg));
+                Audio::instance().play(Audio::Click);
+            }
+        });
+    }
     m_scenarioCard = buildScenarioCard();
     m_achievementsCard = buildAchievementsCard();
     m_missionEndCard = buildMissionEndCard();
     buildEventCards();
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard, m_newsCard,
-                    m_decisionCard})
+                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard,
+                    m_newsCard, m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
     m_dock->hide();
@@ -191,6 +218,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_financeCard->hide();
     m_goalsCard->hide();
     m_routeCard->hide();
+    m_profileCard->hide();
     m_scenarioCard->hide();
     m_achievementsCard->hide();
     m_missionEndCard->hide();
@@ -199,8 +227,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_decisionCard->hide();
     m_toast = new Toast(m_root);
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
-                    m_routeCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard, m_newsCard,
-                    m_decisionCard})
+                    m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_eventsCard,
+                    m_newsCard, m_decisionCard})
         c->ensurePolished();
     // un clic sur le budget ouvre les finances
     m_moneyChip->installEventFilter(this);
@@ -438,6 +466,14 @@ Card *MainWindow::buildCityCard()
     menu->addSeparator();
     menu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"), m_map,
                     &MapView::fitCity);
+    QAction *nightAct = menu->addAction(Icons::icon(Icons::Moon), tr("Cycle jour / nuit"));
+    nightAct->setCheckable(true);
+    nightAct->setChecked(QSettings().value("map/daynight", true).toBool());
+    m_map->setDayNight(nightAct->isChecked());
+    connect(nightAct, &QAction::toggled, this, [this](bool on) {
+        m_map->setDayNight(on);
+        QSettings().setValue("map/daynight", on);
+    });
     QMenu *extend = menu->addMenu(Icons::icon(Icons::Plus), tr("Agrandir la carte"));
     extend->setWindowFlags(extend->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     extend->setAttribute(Qt::WA_TranslucentBackground);
@@ -957,6 +993,21 @@ Card *MainWindow::buildLineCard()
     });
     stockRow->addWidget(m_renewBtn);
     lay->addLayout(stockRow);
+
+    m_profileBtn = new QPushButton(Icons::icon(Icons::Schema), tr("Vue en coupe : tunnels et viaducs"));
+    m_profileBtn->setProperty("variant", "ghost");
+    m_profileBtn->setCheckable(true);
+    m_profileBtn->setCursor(Qt::PointingHandCursor);
+    connect(m_profileBtn, &QPushButton::toggled, this, [this](bool on) {
+        m_profileCard->setVisible(on && m_metro->line(m_currentLine));
+        if (on && m_metro->line(m_currentLine)) {
+            m_profile->setLine(m_currentLine);
+            m_profileTitle->setText(tr("Vue en coupe · %1").arg(m_metro->line(m_currentLine)->name));
+        }
+        layoutOverlays();
+        m_layoutTimer.start(0);
+    });
+    lay->addWidget(m_profileBtn);
 
     // Exploitation
     lay->addSpacing(2);
@@ -2375,6 +2426,13 @@ void MainWindow::layoutOverlays()
         m_goalsCard->adjustSize();
         m_goalsCard->move(W - m_goalsCard->width() - kMargin, m_statsCard->geometry().bottom() - Card::Shadow);
     }
+    if (m_profileCard->isVisible()) {
+        const int left = m_lineCard->isVisible() ? m_lineCard->geometry().right() - 2 * Card::Shadow + 8 : kMargin;
+        const int w = std::min(1100, W - left - kMargin);
+        const int h = std::min(270, std::max(200, (bottomLimit - kMargin) / 3));
+        m_profileCard->setFixedSize(w, h);
+        m_profileCard->move(left, bottomLimit - h + Card::Shadow - 4);
+    }
     if (m_stationCard->isVisible()) {
         const int top = (m_goalsCard->isVisible() ? m_goalsCard : m_statsCard)->geometry().bottom() - Card::Shadow;
         const int h = std::min(wanted(m_stationCard, m_stationContent), bottomLimit - top);
@@ -2430,7 +2488,7 @@ void MainWindow::layoutOverlays()
     for (QWidget *w : {static_cast<QWidget *>(m_cityCard), static_cast<QWidget *>(m_statsCard),
                        static_cast<QWidget *>(m_dock), static_cast<QWidget *>(m_lineCard),
                        static_cast<QWidget *>(m_stationCard), static_cast<QWidget *>(m_goalsCard),
-                       static_cast<QWidget *>(m_routeCard),
+                       static_cast<QWidget *>(m_routeCard), static_cast<QWidget *>(m_profileCard),
                        static_cast<QWidget *>(m_financeCard),
                        static_cast<QWidget *>(m_eventsCard), static_cast<QWidget *>(m_newsCard),
                        static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_scenarioCard),
@@ -2636,6 +2694,11 @@ void MainWindow::selectLine(int lineId)
     m_currentLine = m_metro->line(lineId) ? lineId : -1;
     m_map->setCurrentLine(m_currentLine);
     m_lineCard->setVisible(m_currentLine >= 0);
+    m_profileCard->setVisible(m_profileBtn->isChecked() && m_currentLine >= 0);
+    if (m_profileCard->isVisible()) {
+        m_profile->setLine(m_currentLine);
+        m_profileTitle->setText(tr("Vue en coupe · %1").arg(m_metro->line(m_currentLine)->name));
+    }
     refreshLines();
     refreshLineEditor();
     refreshStation();
@@ -2671,6 +2734,12 @@ void MainWindow::refreshAll()
     refreshFinance();
     if (m_routeActive)
         showRoute(); // le réseau a changé : itinéraire recalculé
+    m_profileCard->setVisible(m_profileBtn->isChecked() && m_currentLine >= 0 && m_metro->city());
+    if (m_profileCard->isVisible()) {
+        m_profile->setLine(m_currentLine);
+        if (const Line *l = m_metro->line(m_currentLine))
+            m_profileTitle->setText(tr("Vue en coupe · %1").arg(l->name));
+    }
     refreshUndo();
     layoutOverlays();
     m_layoutTimer.start(0); // second passage une fois les nouveaux widgets stylés
@@ -2688,7 +2757,12 @@ void MainWindow::refreshStats()
                                    "Juillet", "Août",    "Septembre", "Octobre", "Novembre", "Décembre"};
     // « Semaine 1 » / « janvier, année 1 »
     m_dateChip->setValue(tr("Semaine %1").arg(m_metro->week()));
-    m_dateChip->setSub(tr("%1, année %2").arg(tr(months[month % 12]).toLower()).arg(month / 12 + 1));
+    const int clock = int(m_metro->clockMinutes());
+    m_dateChip->setSub(tr("%1, année %2 · %3 h %4")
+                           .arg(tr(months[month % 12]).toLower())
+                           .arg(month / 12 + 1)
+                           .arg(clock / 60, 2, 10, QLatin1Char('0'))
+                           .arg(clock % 60, 2, 10, QLatin1Char('0')));
     m_ridersChip->setValue(tr("%1 /h").arg(compact(m_metro->totalServed())));
     m_ridersChip->setSub(tr("sur %1 dépl./h").arg(compact(m_metro->totalPotential())));
     m_captureChip->setValue(QStringLiteral("%1 %").arg(QLocale(QLocale::French).toString(m_metro->satisfaction() * 100, 'f', 1)));
@@ -3227,6 +3301,10 @@ void MainWindow::showHelp()
                    "et renouvellement. Les quartiers bien desservis se densifient au fil des ans.</p>"
                    "<p><b>Défis</b> : scénarios sur six grandes villes (accueil ou ☰), import du métro réel (☰), "
                    "et succès à débloquer.</p>"
+                   "<p><b>Ambiance</b> : la journée défile (1 s = 1 min à ×1) ; la nuit la carte s'assombrit, "
+                   "le métro ferme de 1 h à 5 h et circule moins aux heures creuses. Dans la fiche d'une ligne, "
+                   "« Vue en coupe » montre tunnels, viaducs et passages sous les fleuves ; cliquez un tronçon "
+                   "pour basculer tunnel / viaduc.</p>"
                    "<p><b>Agrandir la carte</b> : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.</p>"
                    "<p>Calque <b>demande</b> : rouge = déplacements non desservis, vert = captés par le métro.</p>"
                    "<p style='color:#9AA0A6'>Données © contributeurs OpenStreetMap (ODbL) · "

@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QHash>
 #include <QPolygonF>
+#include <QSet>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
@@ -12,6 +13,7 @@
 #include <QStringList>
 #include <QVector>
 #include <algorithm>
+#include <cmath>
 
 namespace Rules {
 constexpr double WalkFull = 300;          // m : desserte totale autour d'une station
@@ -52,6 +54,12 @@ constexpr double MaxDebt = 1000;          // M€ d'encours maximal
 constexpr double SubsidyShare = 0.4;      // part des coûts d'exploitation que la ville peut subventionner
 constexpr double RenewShare = 0.6;        // coût du renouvellement du matériel / prix neuf
 constexpr double CityGrowthCap = 2.5;     // densité maximale atteinte par la croissance urbaine
+constexpr double ViaductFactor = 0.55;    // coût d'un viaduc / tunnel
+constexpr double BridgeFactor = 0.9;      // viaduc au-dessus de l'eau (pont)
+constexpr double UnderwaterFactor = 1.6;  // tunnel sous un fleuve : plus profond, plus cher
+constexpr double TunnelDepth = 12;        // m sous la surface
+constexpr double UnderwaterDepth = 26;    // m sous la surface (sous le lit du fleuve)
+constexpr double ViaductHeight = 9;       // m au-dessus du sol
 constexpr double SecondsPerWeek = 10;     // secondes réelles par semaine de jeu à vitesse ×1
 constexpr int WeeksPerMonth = 4;
 constexpr double SecondsPerMonth = SecondsPerWeek * WeeksPerMonth;
@@ -106,7 +114,8 @@ struct Line {
     int wagons = 4;
     int trains = 2;
     bool loop = false;
-    double paidLength = 0;
+    double paidLength = 0; // longueur de tunnel équivalente déjà payée (m) ; viaducs et passages sous l'eau pondérés
+    QSet<quint64> elevated; // inter-stations en viaduc (clé : ids triés), les autres sont en tunnel
     double offPeak = 1;   // part des rames en service aux heures creuses (1 ; 0,75 ; 0,5)
     double stockAge = 0;  // âge moyen du matériel roulant (mois)
     // points de passage par paire de stations (clé : ids triés), stockés du plus petit id vers le plus grand
@@ -355,6 +364,10 @@ public:
     double monthlyRevenue() const { return m_monthlyRevenue; } // €
     double monthlyCost() const { return m_monthlyCost; }       // €
     double simMinutes() const { return m_simMinutes; }
+    // horloge de la journée (minutes depuis minuit) : la partie commence à 7 h, 1 s réelle = 1 min à ×1
+    double clockMinutes() const { return std::fmod(m_simMinutes + 7 * 60, 1440.0); }
+    // part des rames en circulation à cette heure : pointe, heures creuses, fermeture de nuit (1 h – 5 h)
+    static double serviceAt(double clockMinutes, const Line &l);
     const QVector<MonthRecord> &history() const { return m_history; } // mois clos
     MonthRecord currentMonth() const;                                 // mois en cours (partiel)
     double totalInvested() const { return m_totalInvested; }
@@ -383,6 +396,21 @@ public:
 
     QJsonObject save() const;
     bool load(const QJsonObject &o);
+
+    // Vue en coupe : tunnel ou viaduc par inter-station, passages sous les fleuves
+    struct ProfilePoint {
+        double s = 0;        // distance depuis le premier arrêt (m)
+        double level = 0;    // altitude de la voie par rapport au sol (m, négatif = sous terre)
+        bool water = false;  // au-dessus / au-dessous d'un cours d'eau
+        bool elevated = false;
+        int seg = 0;
+    };
+    bool segmentElevated(const Line &l, int seg) const;
+    void setSegmentElevated(int lineId, int seg, bool on);
+    bool isWater(const QPointF &p) const;
+    QVector<ProfilePoint> lineProfile(int lineId) const;
+    double trackUnits(const Line &l) const; // longueur équivalente tunnel (m) qui fixe le coût du tracé
+    double segmentCost(const Line &l, int seg, bool elevated) const; // M€
 
     // Politique tarifaire, financement, entretien
     double fare() const { return m_fare; }
@@ -454,6 +482,8 @@ private:
     void loadEvents(const QJsonObject &o);
     void closeMonth();
     void monthlyEconomy(); // fin de mois : emprunts, vieillissement, croissance urbaine
+    void buildWaterIndex();
+    double segmentUnits(const SegPath &path, bool elevated) const;
     void checkMission();
     QJsonObject missionJson() const;
     void loadMission(const QJsonObject &o);
@@ -525,6 +555,8 @@ private:
     double m_initialPopulation = 0;
     Mission m_mission;
     bool m_freeBuild = false;           // import du réseau réel : rien n'est facturé
+    QVector<QPair<QRectF, QPolygonF>> m_waterIndex; // surfaces d'eau (boîte englobante, polygone)
+    QVector<QPair<QRectF, QPolygonF>> m_riverIndex; // cours d'eau linéaires
     struct UndoState {
         QJsonObject net;
         double invested = 0;

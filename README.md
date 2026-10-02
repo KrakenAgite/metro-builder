@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.4.1_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.5.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -139,6 +139,17 @@ L'interface est une carte plein écran avec des panneaux flottants :
 - **Succès** (accueil ou ☰ → Succès) : 22 succès conservés d'une partie à l'autre (première ligne, ligne
   circulaire, station à 4 lignes, 10 000 voyageurs/h, 90 % des habitants desservis, 2 000 M€, dette remboursée,
   dix ans de jeu, scénarios en 3 étoiles, tour du monde des capitales…).
+
+**Ambiance**
+- **Jour et nuit** : l'horloge (affichée sous la date) avance d'une minute par seconde à ×1, la partie commence
+  à 7 h. Au crépuscule la carte bleuit puis s'assombrit, les fenêtres s'allument et les stations rayonnent ;
+  le métro ferme de 1 h à 5 h, roule à pleine fréquence aux heures de pointe (7 h – 9 h 30, 16 h 30 – 19 h 30)
+  et selon le réglage « heures creuses » de chaque ligne le reste du temps. Désactivable dans ☰.
+- **Vue en coupe** (fiche de ligne → « Vue en coupe ») : profil de la ligne avec le sol, les cours d'eau, les
+  tunnels (12 m, 26 m sous un fleuve) et les viaducs sur piliers. Un clic sur un inter-station bascule tunnel
+  ↔ viaduc : le viaduc coûte 45 % de moins (un pont 10 % de moins), un tunnel sous l'eau 60 % de plus ; mais
+  un viaduc freine la densification des quartiers qu'il traverse. Les viaducs sont dessinés sur la carte
+  (tablier et piliers).
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

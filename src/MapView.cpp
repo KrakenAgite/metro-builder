@@ -157,6 +157,75 @@ void MapView::setExtendBusy(bool busy)
     update();
 }
 
+void MapView::setDayNight(bool on)
+{
+    m_dayNight = on;
+    update();
+}
+
+double MapView::darkness() const
+{
+    if (!m_dayNight || !m_city)
+        return 0;
+    // nuit de 21 h 30 à 5 h, aube de 5 h à 7 h 30, crépuscule de 18 h 30 à 21 h 30
+    const double h = m_metro->clockMinutes() / 60;
+    auto smooth = [](double x) {
+        x = std::clamp(x, 0.0, 1.0);
+        return x * x * (3 - 2 * x);
+    };
+    if (h < 5 || h >= 21.5)
+        return 1;
+    if (h < 7.5)
+        return 1 - smooth((h - 5) / 2.5);
+    if (h >= 18.5)
+        return smooth((h - 18.5) / 3);
+    return 0;
+}
+
+// Nuit : carte assombrie (multiplication bleutée), fenêtres et stations éclairées
+void MapView::drawNight(QPainter &p, double dark)
+{
+    p.save();
+    const bool darkStyle = darkMap();
+    const QColor dusk = darkStyle ? QColor(90, 105, 150) : QColor(42, 56, 104);
+    auto mix = [](int a, int b, double t) { return int(a + (b - a) * t); };
+    const QColor tint(mix(255, dusk.red(), dark), mix(255, dusk.green(), dark), mix(255, dusk.blue(), dark));
+    p.setCompositionMode(QPainter::CompositionMode_Multiply);
+    p.fillRect(rect(), tint);
+    // lumières : addition (elles éclairent le fond sombre)
+    p.setCompositionMode(QPainter::CompositionMode_Plus);
+    const QRectF view = QRectF(rect()).adjusted(-10, -10, 10, 10);
+    if (m_scale > 0.04) {
+        const double size = std::clamp(m_scale * 9, 1.4, 3.2);
+        QPen pen(QColor(255, 196, 110, int(150 * dark)), size, Qt::SolidLine, Qt::RoundCap);
+        p.setPen(pen);
+        QVector<QPointF> pts;
+        pts.reserve(m_lights.size());
+        for (const QPointF &w : m_lights) {
+            const QPointF s = toScreen(w);
+            if (view.contains(s))
+                pts << s;
+        }
+        p.drawPoints(pts.data(), pts.size());
+    }
+    // halo chaud autour des stations en service
+    p.setPen(Qt::NoPen);
+    const double r = std::clamp(m_scale * 260, 18.0, 70.0);
+    for (const Station &s : m_metro->stations()) {
+        if (s.lineCount == 0)
+            continue;
+        const QPointF c = toScreen(s.pos);
+        if (!view.adjusted(-r, -r, r, r).contains(c))
+            continue;
+        QRadialGradient g(c, r);
+        g.setColorAt(0, QColor(255, 210, 140, int(110 * dark)));
+        g.setColorAt(1, QColor(255, 210, 140, 0));
+        p.setBrush(g);
+        p.drawEllipse(c, r, r);
+    }
+    p.restore();
+}
+
 void MapView::setTool(Tool tool)
 {
     if (m_tool == RouteTool && tool != RouteTool)
@@ -380,8 +449,18 @@ void MapView::buildPaths()
     m_parks.clear();
     m_forests.clear();
     m_rivers.clear();
+    m_lights.clear();
     if (!m_city)
         return;
+    // fenêtres allumées : un bâtiment sur trois (habité ou de bureaux), au plus 12 000 points
+    {
+        const int step = std::max(1, int(m_city->buildings.size() / 12000));
+        for (int i = 0; i < m_city->buildings.size(); i += step) {
+            const Building &b = m_city->buildings[i];
+            if ((b.residents > 0 || b.jobs > 0) && (i / step) % 3 != 1)
+                m_lights << b.centroid;
+        }
+    }
     auto shape = [](const QPolygonF &p) { return Shape{p, p.boundingRect()}; };
     for (const Road &r : m_city->roads)
         m_roads[int(r.kind)] << shape(r.pts);
@@ -620,6 +699,9 @@ void MapView::paintEvent(QPaintEvent *)
 
     p.setRenderHint(QPainter::Antialiasing, true);
 
+    if (const double dark = darkness(); dark > 0.01)
+        drawNight(p, dark);
+
     // zone de desserte à pied (survol, sélection, ou aperçu de construction)
     auto catchment = [&](const QPointF &world, const QColor &c) {
         const QPointF s = toScreen(world);
@@ -728,6 +810,18 @@ void MapView::drawLines(QPainter &p)
                     // ligne perturbée (grève, panne) : tracé en pointillés, atténué si à l'arrêt
                     const double service = m_metro->lineCapacityFactor(l.id);
                     if (pass == 0) {
+                        if (m_metro->segmentElevated(l, k)) {
+                            // viaduc : tablier clair et piliers réguliers sous la voie
+                            const bool dark = darkMap();
+                            p.setPen(QPen(dark ? QColor("#3A404A") : QColor("#C9CED6"), 17, Qt::SolidLine,
+                                          Qt::FlatCap, Qt::RoundJoin));
+                            p.drawPolyline(pts);
+                            QPen pillars(dark ? QColor("#626A76") : QColor("#7B828C"), 21, Qt::CustomDashLine,
+                                         Qt::FlatCap, Qt::RoundJoin);
+                            pillars.setDashPattern({0.22, 2.2});
+                            p.setPen(pillars);
+                            p.drawPolyline(pts);
+                        }
                         p.setPen(QPen(current ? m_style->label : m_style->lineCasing, current ? 11 : 9,
                                       Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
                     } else {
