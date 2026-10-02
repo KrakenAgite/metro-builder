@@ -822,6 +822,49 @@ Card *MainWindow::buildLineCard()
             m_metro->setLoop(m_currentLine, on);
     });
 
+    // heures creuses : part des rames maintenues en service
+    auto *offRow = new QHBoxLayout;
+    offRow->setSpacing(4);
+    auto *offLabel = caption(tr("Heures creuses"));
+    offLabel->setToolTip(tr("Rames en service en dehors des heures de pointe : moins de rames = exploitation "
+                            "moins chère, mais attente plus longue et un peu moins de voyageurs"));
+    offRow->addWidget(offLabel);
+    offRow->addStretch();
+    m_offPeakGroup = new QButtonGroup(this);
+    for (int pct : {100, 75, 50}) {
+        auto *b = new QToolButton;
+        b->setText(QStringLiteral("%1 %").arg(pct));
+        b->setCheckable(true);
+        b->setProperty("variant", "segment");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setToolTip(tr("%1 % des rames en service aux heures creuses").arg(pct));
+        m_offPeakGroup->addButton(b, pct);
+        offRow->addWidget(b);
+    }
+    connect(m_offPeakGroup, &QButtonGroup::idClicked, this, [this](int pct) {
+        if (!m_updating)
+            m_metro->setOffPeak(m_currentLine, pct / 100.0);
+    });
+    lay->addLayout(offRow);
+
+    // matériel roulant : âge, risque de panne, renouvellement
+    auto *stockRow = new QHBoxLayout;
+    stockRow->setSpacing(8);
+    m_stockLabel = caption({});
+    m_stockLabel->setWordWrap(true);
+    stockRow->addWidget(m_stockLabel, 1);
+    m_renewBtn = new QPushButton(tr("Renouveler"));
+    m_renewBtn->setProperty("variant", "ghost");
+    m_renewBtn->setCursor(Qt::PointingHandCursor);
+    m_renewBtn->setToolTip(tr("Remplacer tout le matériel de la ligne par du neuf (%1 % du prix)")
+                               .arg(int(Rules::RenewShare * 100)));
+    connect(m_renewBtn, &QPushButton::clicked, this, [this] {
+        if (m_metro->renewStock(m_currentLine))
+            Audio::instance().play(Audio::Coins);
+    });
+    stockRow->addWidget(m_renewBtn);
+    lay->addLayout(stockRow);
+
     // Exploitation
     lay->addSpacing(2);
     lay->addWidget(section(tr("Exploitation")));
@@ -1486,17 +1529,105 @@ Card *MainWindow::buildFinanceCard()
     head->addWidget(close);
     lay->addLayout(head);
 
-    auto *kpis = new QHBoxLayout;
-    kpis->setSpacing(8);
     m_fMoney = new KpiTile(tr("Trésorerie"));
     m_fRevenue = new KpiTile(tr("Recettes / mois"));
     m_fOperating = new KpiTile(tr("Exploitation / mois"));
     m_fResult = new KpiTile(tr("Résultat d'exploitation / mois"));
     m_fInvested = new KpiTile(tr("Investi depuis le début"));
     m_fTurnover = new KpiTile(tr("Chiffre d'affaires cumulé"));
-    for (KpiTile *t : {m_fMoney, m_fRevenue, m_fOperating, m_fResult, m_fTurnover, m_fInvested})
-        kpis->addWidget(t);
-    lay->addLayout(kpis);
+    m_fSubsidy = new KpiTile(tr("Subvention de la ville / mois"));
+    m_fDebt = new KpiTile(tr("Dette restante"));
+    auto *kpiGrid = new QGridLayout;
+    kpiGrid->setSpacing(8);
+    KpiTile *kpiTiles[] = {m_fMoney, m_fRevenue, m_fOperating, m_fResult,
+                           m_fSubsidy, m_fDebt, m_fTurnover, m_fInvested};
+    for (int i = 0; i < 8; ++i)
+        kpiGrid->addWidget(kpiTiles[i], i / 4, i % 4);
+    lay->addLayout(kpiGrid);
+
+    // Politique : tarif, entretien, emprunts
+    lay->addWidget(section(tr("Politique du réseau")));
+    m_policyBox = new QWidget;
+    auto *pol = new QHBoxLayout(m_policyBox);
+    pol->setContentsMargins(0, 0, 0, 0);
+    pol->setSpacing(28);
+    // tarif
+    auto *fareCol = new QVBoxLayout;
+    fareCol->setSpacing(4);
+    auto *fareHead = new QHBoxLayout;
+    fareHead->addWidget(new QLabel(tr("Prix du ticket")));
+    fareHead->addStretch();
+    m_fareLabel = new QLabel;
+    m_fareLabel->setProperty("role", "value");
+    fareHead->addWidget(m_fareLabel);
+    fareCol->addLayout(fareHead);
+    m_fareSlider = new QSlider(Qt::Horizontal);
+    m_fareSlider->setRange(10, 40); // dixièmes d'euro
+    m_fareSlider->setPageStep(5);
+    m_fareSlider->setToolTip(tr("Un ticket plus cher rapporte plus par voyage mais fait fuir des voyageurs"));
+    connect(m_fareSlider, &QSlider::valueChanged, this, [this](int v) {
+        if (!m_updating)
+            m_metro->setFare(v / 10.0);
+    });
+    fareCol->addWidget(m_fareSlider);
+    m_fareHint = caption({});
+    fareCol->addWidget(m_fareHint);
+    pol->addLayout(fareCol, 3);
+    // entretien
+    auto *maintCol = new QVBoxLayout;
+    maintCol->setSpacing(4);
+    maintCol->addWidget(new QLabel(tr("Entretien du matériel")));
+    auto *maintRow = new QHBoxLayout;
+    maintRow->setSpacing(4);
+    m_maintGroup = new QButtonGroup(this);
+    const QString maintNames[] = {tr("Réduit"), tr("Normal"), tr("Renforcé")};
+    const QString maintTips[] = {tr("−15 % sur le coût des rames, mais elles vieillissent plus vite et tombent plus souvent en panne"),
+                                 tr("Coût et usure standard"),
+                                 tr("+25 % sur le coût des rames ; vieillissement ralenti et pannes bien plus rares")};
+    for (int i = 0; i < 3; ++i) {
+        auto *b = new QToolButton;
+        b->setText(maintNames[i]);
+        b->setToolTip(maintTips[i]);
+        b->setCheckable(true);
+        b->setProperty("variant", "segment");
+        b->setCursor(Qt::PointingHandCursor);
+        m_maintGroup->addButton(b, i);
+        maintRow->addWidget(b);
+    }
+    connect(m_maintGroup, &QButtonGroup::idClicked, this, [this](int level) { m_metro->setMaintenance(level); });
+    maintCol->addLayout(maintRow);
+    m_maintHint = caption({});
+    m_maintHint->setWordWrap(true);
+    maintCol->addWidget(m_maintHint);
+    pol->addLayout(maintCol, 3);
+    // emprunts
+    auto *loanCol = new QVBoxLayout;
+    loanCol->setSpacing(4);
+    loanCol->addWidget(new QLabel(tr("Emprunts (4 %/an sur 10 ans)")));
+    auto *loanRow = new QHBoxLayout;
+    loanRow->setSpacing(4);
+    for (int amount : {100, 250, 500}) {
+        auto *b = new QPushButton(tr("+%1 M€").arg(amount));
+        b->setProperty("variant", "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setToolTip(tr("Emprunter %1 M€ (encours maximal %2 M€)").arg(amount).arg(int(Rules::MaxDebt)));
+        connect(b, &QPushButton::clicked, this, [this, amount] {
+            if (m_metro->takeLoan(amount))
+                Audio::instance().play(Audio::Coins);
+        });
+        loanRow->addWidget(b);
+    }
+    m_repayBtn = new QPushButton(tr("Tout rembourser"));
+    m_repayBtn->setProperty("variant", "ghost");
+    m_repayBtn->setCursor(Qt::PointingHandCursor);
+    connect(m_repayBtn, &QPushButton::clicked, this, [this] { m_metro->repayLoans(); });
+    loanRow->addWidget(m_repayBtn);
+    loanCol->addLayout(loanRow);
+    m_debtLabel = caption({});
+    m_debtLabel->setWordWrap(true);
+    loanCol->addWidget(m_debtLabel);
+    pol->addLayout(loanCol, 4);
+    lay->addWidget(m_policyBox);
 
     auto *grid = new QGridLayout;
     grid->setHorizontalSpacing(24);
@@ -1508,7 +1639,7 @@ Card *MainWindow::buildFinanceCard()
     m_cFlows = new ChartWidget(tr("Recettes et exploitation"));
     m_cFlows->setSubtitle(tr("M€ par mois · dernier mois en cours"));
     m_cResult = new ChartWidget(tr("Résultat d'exploitation"));
-    m_cResult->setSubtitle(tr("recettes − exploitation, M€ par mois"));
+    m_cResult->setSubtitle(tr("recettes + subventions − exploitation, M€ par mois"));
     m_cInvest = new ChartWidget(tr("Investissements"));
     m_cInvest->setSubtitle(tr("construction nette, M€ par mois"));
     m_cRiders = new ChartWidget(tr("Fréquentation"));
@@ -1530,6 +1661,15 @@ Card *MainWindow::buildFinanceCard()
         ch->setMinimumHeight(190);
     grid->addWidget(m_cScore, 2, 0, 1, 2);
     grid->addWidget(m_cPoints, 2, 2);
+    // ville et dette
+    m_cPopulation = new ChartWidget(tr("Population de la ville"));
+    m_cPopulation->setSubtitle(tr("habitants de la zone de jeu · croissance autour des stations"));
+    m_cDebt = new ChartWidget(tr("Dette"));
+    m_cDebt->setSubtitle(tr("encours des emprunts, M€ en fin de mois"));
+    for (ChartWidget *ch : {m_cPopulation, m_cDebt})
+        ch->setMinimumHeight(190);
+    grid->addWidget(m_cPopulation, 3, 0, 1, 2);
+    grid->addWidget(m_cDebt, 3, 2);
     lay->addLayout(grid);
 
     lay->addWidget(section(tr("Rentabilité par ligne")));
@@ -1559,7 +1699,31 @@ void MainWindow::refreshFinance()
     m_fMoney->setValue(meur(m_metro->money()));
     m_fRevenue->setValue(meur(rev));
     m_fOperating->setValue(meur(op));
-    m_fResult->setValue(QStringLiteral("%1%2").arg(rev - op >= 0 ? "+" : "−").arg(meur(std::abs(rev - op))));
+    const double sub = m_metro->monthlySubsidy() / 1e6;
+    m_fResult->setValue(QStringLiteral("%1%2").arg(rev + sub - op >= 0 ? "+" : "−").arg(meur(std::abs(rev + sub - op))));
+    m_fSubsidy->setValue(meur(sub));
+    m_fDebt->setValue(m_metro->debt() > 0 ? tr("%1 (−%2/mois)").arg(meur(m_metro->debt()), meur(m_metro->loanPayment()))
+                                          : meur(0));
+
+    // politique
+    m_updating = true;
+    m_fareSlider->setValue(qRound(m_metro->fare() * 10));
+    m_updating = false;
+    m_fareLabel->setText(QStringLiteral("%1 €").arg(loc.toString(m_metro->fare(), 'f', 2)));
+    const double demand = m_metro->fareDemandFactor();
+    m_fareHint->setText(tr("fréquentation ×%1 · recette par voyageur potentiel ×%2")
+                            .arg(loc.toString(demand, 'f', 2), loc.toString(demand * m_metro->fare() / Rules::Fare, 'f', 2)));
+    if (auto *b = m_maintGroup->button(m_metro->maintenance()))
+        b->setChecked(true);
+    static const char *maintText[] = {QT_TR_NOOP("Rames moins chères à exploiter, mais usure et pannes plus fréquentes."),
+                                      QT_TR_NOOP("Pannes possibles après 5 ans de service ; renouvelez le matériel dans la fiche de chaque ligne."),
+                                      QT_TR_NOOP("Matériel ménagé : il vieillit moins vite et tombe rarement en panne.")};
+    m_maintHint->setText(tr(maintText[m_metro->maintenance()]));
+    m_debtLabel->setText(m_metro->debt() > 0
+                             ? tr("Encours %1 sur %2 M€ autorisés · %3 par mois").arg(meur(m_metro->debt())).arg(int(Rules::MaxDebt)).arg(meur(m_metro->loanPayment()))
+                             : tr("Aucune dette · jusqu'à %1 M€ empruntables").arg(int(Rules::MaxDebt)));
+    m_repayBtn->setEnabled(m_metro->debt() > 0);
+    m_policyBox->setEnabled(!m_metro->sandbox());
     m_fInvested->setValue(meur(m_metro->totalInvested()));
     m_fTurnover->setValue(meur(m_metro->totalRevenue()));
 
@@ -1574,7 +1738,7 @@ void MainWindow::refreshFinance()
     static const char *longNames[] = {"Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
                                       "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"};
     QStringList labels, tips;
-    QVector<double> money, revenue, operating, invest, riders, capture, score, monthPts, goalPts;
+    QVector<double> money, revenue, operating, invest, riders, capture, score, monthPts, goalPts, subsidy, debt, population;
     for (int i = 0; i < months.size(); ++i) {
         const MonthRecord &r = months[i];
         const int m = r.month - 1;
@@ -1592,15 +1756,20 @@ void MainWindow::refreshFinance()
         score << r.score;
         monthPts << r.monthPoints;
         goalPts << r.goalPoints;
+        subsidy << r.subsidy;
+        debt << r.debt;
+        population << r.population;
     }
     // palette catégorielle validée sur le fond des panneaux (ordre fixe)
     const QColor s1("#3987e5"), s2("#d95926");
     m_cMoney->setData(ChartWidget::AreaChart, labels, tips, {{tr("Trésorerie"), s1, money}}, meur);
+    const QColor s3("#199e70");
     m_cFlows->setData(ChartWidget::BarChart, labels, tips,
-                      {{tr("Recettes"), s1, revenue}, {tr("Exploitation"), s2, operating}}, meur);
+                      {{tr("Recettes"), s1, revenue}, {tr("Exploitation"), s2, operating}, {tr("Subventions"), s3, subsidy}},
+                      meur);
     QVector<double> result;
     for (int i = 0; i < revenue.size(); ++i)
-        result << revenue[i] - operating[i];
+        result << revenue[i] + subsidy[i] - operating[i];
     m_cResult->setData(ChartWidget::BarChart, labels, tips, {{tr("Résultat"), s1, result}}, meur);
     m_cInvest->setData(ChartWidget::BarChart, labels, tips, {{tr("Investissements"), s1, invest}}, meur);
     m_cRiders->setData(ChartWidget::LineChart, labels, tips, {{tr("Voyageurs/h"), s1, riders}},
@@ -1612,6 +1781,9 @@ void MainWindow::refreshFinance()
     m_cScore->setData(ChartWidget::AreaChart, labels, tips, {{tr("Score"), s1, score}}, pts);
     m_cPoints->setData(ChartWidget::BarChart, labels, tips,
                        {{tr("Fin de mois"), s1, monthPts}, {tr("Objectifs"), s2, goalPts}}, pts);
+    m_cPopulation->setData(ChartWidget::LineChart, labels, tips, {{tr("Habitants"), s1, population}},
+                           [loc](double v) { return loc.toString(qRound(v)); });
+    m_cDebt->setData(ChartWidget::AreaChart, labels, tips, {{tr("Dette"), s2, debt}}, meur);
 
     QVector<LineEconomicsWidget::Row> rows;
     for (const Line &l : m_metro->lines()) {
@@ -1963,7 +2135,8 @@ void MainWindow::refreshAll()
 
 void MainWindow::refreshStats()
 {
-    const double net = (m_metro->monthlyRevenue() - m_metro->monthlyCost()) / 1e6;
+    const double net = (m_metro->monthlyRevenue() + m_metro->monthlySubsidy() - m_metro->monthlyCost()) / 1e6
+                       - m_metro->loanPayment();
     m_moneyChip->setValue(m_metro->sandbox() ? tr("Bac à sable") : money(m_metro->money()));
     m_moneyChip->setSub(tr("%1%2 /mois").arg(net >= 0 ? "+" : "").arg(money(net)),
                         net >= 0 ? Theme::Success : Theme::Danger);
@@ -2041,6 +2214,18 @@ void MainWindow::refreshLineEditor()
     m_trainCount->setText(tr("%1 rame%2").arg(l->trains).arg(l->trains > 1 ? "s" : ""));
     m_loopBtn->setChecked(l->loop);
     m_loopBtn->setEnabled(l->stops.size() >= 3);
+    if (auto *b = m_offPeakGroup->button(qRound(l->offPeak * 100)))
+        b->setChecked(true);
+    {
+        const double years = l->stockAge / 12;
+        const QString age = years < 1 ? tr("neuf") : years < 2 ? tr("1 an") : tr("%1 ans").arg(int(years));
+        const double risk = m_metro->failureChance(*l);
+        m_stockLabel->setText(risk > 0 ? tr("Matériel : %1 · risque de panne %2 %/mois").arg(age).arg(qRound(risk * 100))
+                                       : tr("Matériel : %1 · fiable").arg(age));
+        m_stockLabel->setStyleSheet(risk >= 0.08 ? "color: #F5A524;" : QString());
+        m_renewBtn->setText(tr("Renouveler (%1)").arg(money(m_metro->renewCost(*l))));
+        m_renewBtn->setEnabled(l->stockAge >= 12 && !m_metro->sandbox());
+    }
     m_updating = false;
 
     const bool active = l->segmentCount() > 0;
@@ -2477,6 +2662,9 @@ void MainWindow::showHelp()
                    "(marche, attente, métro, correspondances) et le comparer à la marche.</p>"
                    "<p><b>Bac à sable</b> : choisissez-le sur l'écran d'accueil (ou ☰ pour la partie en cours) : "
                    "construction gratuite, sans événements ni score.</p>"
+                   "<p><b>Gestion</b> (Finances, B) : prix du ticket, niveau d'entretien, emprunts ; la ville subventionne "
+                   "un métro qui capte bien la demande. Dans chaque ligne : rames aux heures creuses, âge du matériel "
+                   "et renouvellement. Les quartiers bien desservis se densifient au fil des ans.</p>"
                    "<p><b>Agrandir la carte</b> : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.</p>"
                    "<p>Calque <b>demande</b> : rouge = déplacements non desservis, vert = captés par le métro.</p>"
                    "<p style='color:#9AA0A6'>Données © contributeurs OpenStreetMap (ODbL) · "

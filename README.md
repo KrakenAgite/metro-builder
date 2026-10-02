@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.2.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.3.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -113,6 +113,18 @@ L'interface est une carte plein écran avec des panneaux flottants :
     arrêts, rames, tracés, noms, couleurs) ; la construction annulée est intégralement remboursée.
 12. **Bac à sable** : à choisir sur l'écran d'accueil (« Carrière » / « Bac à sable ») ou ☰ pour la partie en
     cours (sans retour) : construction gratuite, ni événements ni score ; le mode est enregistré dans la sauvegarde.
+13. **Gestion du réseau** (panneau Finances, **B**) :
+    - **Prix du ticket** (1 à 4 €) : plus cher, chaque voyage rapporte plus mais la fréquentation baisse
+      (environ −40 % par euro) ; la recette est maximale vers 1,80 €.
+    - **Subvention de la ville** : jusqu'à 40 % des coûts d'exploitation, d'autant plus que le métro capte la demande.
+    - **Emprunts** de 100, 250 ou 500 M€ à 4 %/an sur 10 ans (encours maximal 1 000 M€), remboursables d'un coup.
+    - **Entretien** réduit / normal / renforcé : coût des rames (−15 % / +25 %) contre vitesse d'usure et pannes.
+14. **Exploitation des lignes** (fiche de ligne) : **heures creuses** à 100, 75 ou 50 % des rames (moins de coûts,
+    un peu moins de voyageurs hors pointe) ; **âge du matériel** : après 5 ans, des rames tombent en panne
+    (capacité −40 % pendant 2 semaines) ; **Renouveler** remplace tout le matériel pour 60 % du prix neuf.
+15. **Ville qui évolue** : chaque mois les quartiers desservis se densifient (jusqu'à +0,5 %/mois là où le métro
+    capte bien la demande, plafonné à 2,5 fois la densité d'origine) et toute la ville croît lentement ;
+    bilan démographique chaque année et courbe de population dans les Finances.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
 vitesse ×1 et un mois compte 4 semaines. Bilans et graphiques financiers restent mensuels ; la durée des

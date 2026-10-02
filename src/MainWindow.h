@@ -24,6 +24,7 @@ class QToolButton;
 class QButtonGroup;
 class QListWidget;
 class QLabel;
+class QSlider;
 class QProgressBar;
 class QHBoxLayout;
 class QVBoxLayout;
@@ -146,6 +147,9 @@ private:
     QButtonGroup *m_wagonGroup;
     QLabel *m_trainCount;
     QToolButton *m_loopBtn;
+    QButtonGroup *m_offPeakGroup;
+    QLabel *m_stockLabel;
+    QPushButton *m_renewBtn;
     KpiTile *m_kLength, *m_kCycle, *m_kHeadway, *m_kCapacity, *m_kRiders, *m_kLoad;
     QLabel *m_lineAdvice;
 
@@ -160,8 +164,14 @@ private:
     // finances
     Card *m_financeCard = nullptr;
     QWidget *m_financeContent;
-    KpiTile *m_fMoney, *m_fRevenue, *m_fOperating, *m_fResult, *m_fInvested, *m_fTurnover;
-    ChartWidget *m_cMoney, *m_cFlows, *m_cResult, *m_cInvest, *m_cRiders, *m_cCapture, *m_cScore, *m_cPoints;
+    KpiTile *m_fMoney, *m_fRevenue, *m_fOperating, *m_fResult, *m_fInvested, *m_fTurnover, *m_fSubsidy, *m_fDebt;
+    ChartWidget *m_cMoney, *m_cFlows, *m_cResult, *m_cInvest, *m_cRiders, *m_cCapture, *m_cScore, *m_cPoints,
+        *m_cPopulation, *m_cDebt;
+    QWidget *m_policyBox;
+    QSlider *m_fareSlider;
+    QLabel *m_fareLabel, *m_fareHint, *m_maintHint, *m_debtLabel;
+    QButtonGroup *m_maintGroup;
+    QPushButton *m_repayBtn;
     LineEconomicsWidget *m_lineEco;
     int m_financeRange = 24; // mois affichés (0 = toute la partie)
 

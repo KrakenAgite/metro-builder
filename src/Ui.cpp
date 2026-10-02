@@ -96,6 +96,12 @@ void apply()
             padding: 8px 14px; font-weight: 600;
         }
         QPushButton[variant="danger"]:hover { background: rgba(240,77,94,0.26); }
+        Card QPushButton[variant="ghost"] {
+            background: rgba(255,255,255,0.08); color: #E8EAED; border: none; border-radius: 9px;
+            padding: 7px 12px; font-weight: 600;
+        }
+        Card QPushButton[variant="ghost"]:hover { background: rgba(255,255,255,0.16); }
+        Card QPushButton[variant="ghost"]:disabled { background: rgba(255,255,255,0.04); color: #6B7280; }
 
         Card QListWidget { background: transparent; border: none; color: #E8EAED; }
 

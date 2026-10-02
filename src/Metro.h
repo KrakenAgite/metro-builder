@@ -42,6 +42,15 @@ constexpr double RevenueBoost = 4;        // recettes ×4 : compense le mois de 
 constexpr double WagonDailyCost = 2000;   // €/jour
 constexpr double StationDailyCost = 1500; // €/jour
 constexpr double DaysPerMonth = 30;
+constexpr double PeakHours = 4;           // heures-équivalent de pointe par jour
+constexpr double OffPeakHours = 8;        // heures-équivalent creuses (4 + 8 = 12 = DailyFactor)
+constexpr double FareElasticity = 0.55;   // baisse de la fréquentation par euro au-dessus du tarif de base
+constexpr double LoanRate = 0.04;         // taux annuel des emprunts
+constexpr int LoanMonths = 120;           // durée de remboursement (10 ans)
+constexpr double MaxDebt = 1000;          // M€ d'encours maximal
+constexpr double SubsidyShare = 0.4;      // part des coûts d'exploitation que la ville peut subventionner
+constexpr double RenewShare = 0.6;        // coût du renouvellement du matériel / prix neuf
+constexpr double CityGrowthCap = 2.5;     // densité maximale atteinte par la croissance urbaine
 constexpr double SecondsPerWeek = 10;     // secondes réelles par semaine de jeu à vitesse ×1
 constexpr int WeeksPerMonth = 4;
 constexpr double SecondsPerMonth = SecondsPerWeek * WeeksPerMonth;
@@ -97,6 +106,8 @@ struct Line {
     int trains = 2;
     bool loop = false;
     double paidLength = 0;
+    double offPeak = 1;   // part des rames en service aux heures creuses (1 ; 0,75 ; 0,5)
+    double stockAge = 0;  // âge moyen du matériel roulant (mois)
     // points de passage par paire de stations (clé : ids triés), stockés du plus petit id vers le plus grand
     QHash<quint64, QVector<QPointF>> via;
     // calculé
@@ -139,6 +150,7 @@ enum class EventKind {
     Development,      // nouveau quartier : habitants / emplois en plus (permanent)
     Sponsor,          // mécénat : argent contre le nom d'une station
     BadPress,         // usagers en colère : demande réduite
+    TrainFailure,     // panne d'une rame vieillissante : capacité réduite
 };
 
 struct GameEvent {
@@ -226,6 +238,10 @@ struct MonthRecord {
     double score = 0;      // score en fin de mois
     double monthPoints = 0; // points de fin de mois (fréquentation, demande captée, rentabilité)
     double goalPoints = 0;  // points des objectifs atteints dans le mois
+    double subsidy = 0;     // subvention de la ville (M€)
+    double loanPaid = 0;    // remboursement d'emprunts (M€)
+    double debt = 0;        // encours restant en fin de mois (M€)
+    double population = 0;  // habitants de la zone de jeu
     double result() const { return revenue - operating - investment; }
 };
 
@@ -337,6 +353,24 @@ public:
     QJsonObject save() const;
     bool load(const QJsonObject &o);
 
+    // Politique tarifaire, financement, entretien
+    double fare() const { return m_fare; }
+    void setFare(double euros);
+    double fareDemandFactor() const; // effet du tarif sur la fréquentation
+    int maintenance() const { return m_maintenance; } // 0 réduit, 1 normal, 2 renforcé
+    void setMaintenance(int level);
+    double debt() const;          // M€ restant dus
+    double loanPayment() const;   // M€ remboursés par mois
+    bool takeLoan(double amount); // M€
+    bool repayLoans();
+    double monthlySubsidy() const { return m_monthlySubsidy; } // €
+    double population() const { return m_population; }
+    // Exploitation des lignes
+    void setOffPeak(int lineId, double ratio);
+    double failureChance(const Line &l) const; // risque mensuel de panne d'une rame
+    double renewCost(const Line &l) const;     // M€
+    bool renewStock(int lineId);
+
     // Annuler / refaire : chaque modification du réseau est mémorisée ; annuler rembourse la construction
     bool canUndo() const { return !m_undo.isEmpty(); }
     bool canRedo() const { return !m_redo.isEmpty(); }
@@ -377,6 +411,12 @@ private:
     QJsonArray eventsJson() const;
     void loadEvents(const QJsonObject &o);
     void closeMonth();
+    void monthlyEconomy(); // fin de mois : emprunts, vieillissement, croissance urbaine
+    void growCity();
+    void applyGrowth();
+    double maintenanceCostFactor() const;
+    QJsonObject economyJson() const;
+    void loadEconomy(const QJsonObject &o);
     QJsonObject networkJson() const;
     void loadNetwork(const QJsonObject &o);
     void trackEdit();  // après une modification : mémorise l'état précédent pour « annuler »
@@ -426,6 +466,17 @@ private:
     QVector<Objective> m_goals;
     bool m_checkingGoals = false;
     bool m_sandbox = false;
+    double m_fare = Rules::Fare;
+    int m_maintenance = 1;
+    struct Loan {
+        double remaining = 0, payment = 0;
+        int monthsLeft = 0;
+    };
+    QVector<Loan> m_loans;
+    double m_monthlySubsidy = 0;
+    double m_population = 0, m_popYearStart = 0;
+    double m_baseGrowth = 1;            // croissance naturelle de toute la ville
+    QHash<qint64, float> m_growth;      // croissance autour des stations, par cellule (clé : coordonnées /100 m)
     struct UndoState {
         QJsonObject net;
         double invested = 0;

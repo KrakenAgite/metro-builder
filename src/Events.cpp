@@ -44,7 +44,8 @@ double Metro::lineCapacityFactor(int lineId) const
 {
     double f = 1;
     for (const GameEvent &e : m_events)
-        if (e.lineId == lineId && (e.kind == EventKind::Strike || e.kind == EventKind::Breakdown))
+        if (e.lineId == lineId
+            && (e.kind == EventKind::Strike || e.kind == EventKind::Breakdown || e.kind == EventKind::TrainFailure))
             f *= e.value;
     return f;
 }
@@ -81,7 +82,7 @@ double Metro::globalDemandFactor() const
     for (const GameEvent &e : m_events)
         if (e.kind == EventKind::Pollution || e.kind == EventKind::BadPress)
             f *= e.value;
-    return f;
+    return f * fareDemandFactor();
 }
 
 double Metro::demandFactorAt(const QPointF &p) const
@@ -407,6 +408,7 @@ void Metro::resolveEvent(int id, int choice)
         case EventKind::Strike:
         case EventKind::Breakdown:
         case EventKind::Flood:
+        case EventKind::TrainFailure:
             if (choice == 0) {
                 if (m_money < e.cost) {
                     emit message(tr("Budget insuffisant (%1 M€ requis)").arg(fmtMoney(e.cost)));

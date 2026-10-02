@@ -64,7 +64,9 @@ void Metro::updateCity(QSharedPointer<CityData> city)
 {
     // le repère (lat0/lon0) est inchangé : stations et tracés restent valides
     m_city = city;
+    const double before = m_population;
     buildGrid();
+    m_popYearStart += m_population - before; // habitants de la zone ajoutée : pas de la croissance
     recompute();
 }
 
@@ -89,6 +91,13 @@ void Metro::reset()
     m_lastMonthPoints = m_goalsDone = m_profitStreak = m_goalRotation = 0;
     std::fill(std::begin(m_goalLevel), std::end(m_goalLevel), 0);
     m_goals.clear();
+    m_fare = Rules::Fare;
+    m_maintenance = 1;
+    m_loans.clear();
+    m_monthlySubsidy = 0;
+    m_baseGrowth = 1;
+    m_growth.clear();
+    m_popYearStart = 0;
     buildGrid();
     recompute();
     resetUndo();
@@ -120,6 +129,9 @@ void Metro::buildGrid()
         m_grid.jobs[i] += bd.jobs;
     }
     applyDevelopments();
+    applyGrowth();
+    if (m_popYearStart <= 0)
+        m_popYearStart = m_population;
     for (int i = 0; i < n; ++i)
         m_grid.potential[i] = m_grid.pop[i] * Rules::TripRateResident + m_grid.jobs[i] * Rules::TripRateJob;
 }
@@ -744,6 +756,8 @@ void Metro::setWagons(int lineId, int wagons)
     }
     if (delta < 0)
         charge(delta * Rules::WagonCost * Rules::Refund); // delta < 0 : revente
+    if (delta > 0) // voitures neuves : l'âge moyen rajeunit
+        l->stockAge *= double(l->wagons) / wagons;
     l->wagons = wagons;
     recompute();
 }
@@ -761,6 +775,8 @@ void Metro::setTrains(int lineId, int trains)
     }
     if (delta < 0)
         charge(delta * Rules::WagonCost * Rules::Refund);
+    if (delta > 0) // rames neuves
+        l->stockAge *= double(l->trains) / trains;
     l->trains = trains;
     recompute();
 }
@@ -1089,11 +1105,19 @@ void Metro::recompute()
     m_satisfaction = totalPot > 0 ? servedPot / totalPot : 0;
 
     // 7. Finances (par mois)
-    int wagons = 0;
-    for (const Line &l : m_lines)
-        wagons += l.wagons * l.trains;
-    m_monthlyRevenue = m_totalServed * Rules::DailyFactor * Rules::Fare * Rules::DaysPerMonth * Rules::RevenueBoost;
-    m_monthlyCost = (wagons * Rules::WagonDailyCost + nS * Rules::StationDailyCost) * Rules::DaysPerMonth * opCostFactor();
+    // voyages/jour = pointe × (heures de pointe + heures creuses × maintien de la fréquentation) ;
+    // en heures creuses, moins de rames = attente plus longue = un peu moins de voyageurs
+    double weighted = 0, ridersSum = 0, stockCost = 0;
+    for (const Line &l : m_lines) {
+        weighted += l.ridership * (Rules::PeakHours + Rules::OffPeakHours * std::sqrt(l.offPeak));
+        ridersSum += l.ridership;
+        stockCost += lineMonthlyCost(l);
+    }
+    const double dailyFactor = ridersSum > 0 ? weighted / ridersSum : Rules::DailyFactor;
+    m_monthlyRevenue = m_totalServed * dailyFactor * m_fare * Rules::DaysPerMonth * Rules::RevenueBoost;
+    m_monthlyCost = (stockCost + nS * Rules::StationDailyCost * Rules::DaysPerMonth) * opCostFactor();
+    // subvention de la ville : jusqu'à 40 % de l'exploitation si le métro capte bien la demande
+    m_monthlySubsidy = m_monthlyCost * Rules::SubsidyShare * std::clamp((m_satisfaction - 0.1) / 0.3, 0.0, 1.0);
 
     trackEdit();
     checkGoals();
@@ -1117,7 +1141,8 @@ void Metro::advance(double realSeconds, double speed)
         m_current.operating += m_monthlyCost / 1e6 * frac;
         m_totalRevenue += m_monthlyRevenue / 1e6 * frac;
         m_totalOperating += m_monthlyCost / 1e6 * frac;
-        m_money += (m_monthlyRevenue - m_monthlyCost) / 1e6 * frac;
+        m_current.subsidy += m_monthlySubsidy / 1e6 * frac;
+        m_money += (m_monthlyRevenue + m_monthlySubsidy - m_monthlyCost) / 1e6 * frac;
         m_financeSeconds += step;
         dt -= step;
         if (m_financeSeconds >= (weeksDone + 1) * Rules::SecondsPerWeek - 1e-9) {
@@ -1150,6 +1175,10 @@ void Metro::closeMonth()
     m_profitStreak = m_current.revenue > m_current.operating && m_current.revenue > 0 ? m_profitStreak + 1 : 0;
     m_current.score = m_score;
     m_current.monthPoints = m_lastMonthPoints;
+    monthlyEconomy(); // emprunts, vieillissement du matériel, croissance urbaine
+    m_current.debt = debt();
+    m_current.money = m_money;
+    m_current.population = m_population;
     m_history << m_current;
     m_current = MonthRecord();
     checkGoals();
@@ -1165,6 +1194,8 @@ MonthRecord Metro::currentMonth() const
     r.capture = m_satisfaction;
     r.monthPoints = monthPoints(); // estimation au rythme actuel
     r.score = m_score + r.monthPoints;
+    r.debt = debt();
+    r.population = m_population;
     return r;
 }
 
@@ -1179,7 +1210,9 @@ double Metro::lineMonthlyRevenue(const Line &l) const
 
 double Metro::lineMonthlyCost(const Line &l) const
 {
-    return l.wagons * l.trains * Rules::WagonDailyCost * Rules::DaysPerMonth;
+    // les rames retirées aux heures creuses coûtent moins (énergie, conduite), l'entretien reste
+    return l.wagons * l.trains * Rules::WagonDailyCost * Rules::DaysPerMonth * (0.35 + 0.65 * l.offPeak)
+           * maintenanceCostFactor();
 }
 
 QVector<TrainVis> Metro::trains(double wagonSpacing) const
@@ -1250,7 +1283,8 @@ QJsonObject Metro::networkJson() const
             stops << id;
         ln << QJsonObject{{"id", l.id},         {"code", l.code},     {"name", l.name},     {"color", l.color.name()},
                           {"wagons", l.wagons}, {"trains", l.trains}, {"loop", l.loop},
-                          {"paid", l.paidLength}, {"stops", stops}, {"via", viaJson(l)}};
+                          {"paid", l.paidLength}, {"stops", stops}, {"via", viaJson(l)},
+                          {"offpeak", l.offPeak}, {"age", l.stockAge}};
     }
     return QJsonObject{{"stations", st}, {"lines", ln}, {"nextStation", m_nextStationId}, {"nextLine", m_nextLineId}};
 }
@@ -1261,11 +1295,12 @@ QJsonObject Metro::save() const
     QJsonArray hist;
     for (const MonthRecord &r : m_history)
         hist << QJsonArray{r.money, r.revenue, r.operating, r.investment, r.riders, r.capture,
-                           r.score, r.monthPoints, r.goalPoints};
+                           r.score, r.monthPoints, r.goalPoints, r.subsidy, r.loanPaid, r.debt, r.population};
     const QJsonObject rest{{"money", m_money},
                        {"finance", m_financeSeconds},
                        {"history", hist},
-                       {"current", QJsonArray{m_current.revenue, m_current.operating, m_current.investment, m_current.goalPoints}},
+                       {"current", QJsonArray{m_current.revenue, m_current.operating, m_current.investment, m_current.goalPoints,
+                                              m_current.subsidy, m_current.loanPaid}},
                        {"invested", m_totalInvested},
                        {"totalRevenue", m_totalRevenue},
                        {"totalOperating", m_totalOperating},
@@ -1273,7 +1308,8 @@ QJsonObject Metro::save() const
                        {"version", 2},
                        {"events", eventsJson()},
                        {"goals", goalsJson()},
-                       {"sandbox", m_sandbox}};
+                       {"sandbox", m_sandbox},
+                       {"economy", economyJson()}};
     for (auto it = rest.begin(); it != rest.end(); ++it)
         o.insert(it.key(), it.value());
     return o;
@@ -1302,6 +1338,8 @@ void Metro::loadNetwork(const QJsonObject &o)
         l.trains = std::max(1, lo.value("trains").toInt(2));
         l.loop = lo.value("loop").toBool();
         l.paidLength = lo.value("paid").toDouble();
+        l.offPeak = std::clamp(lo.value("offpeak").toDouble(1), 0.5, 1.0);
+        l.stockAge = lo.value("age").toDouble(0);
         for (const QJsonValue &vv : lo.value("via").toArray()) {
             const QJsonObject vo = vv.toObject();
             const QJsonArray xy = vo.value("pts").toArray();
@@ -1340,6 +1378,10 @@ bool Metro::load(const QJsonObject &o)
         r.score = a.size() > 6 ? a[6].toDouble() : 0; // anciennes sauvegardes : pas d'historique du score
         r.monthPoints = a.size() > 7 ? a[7].toDouble() : 0;
         r.goalPoints = a.size() > 8 ? a[8].toDouble() : 0;
+        r.subsidy = a.size() > 12 ? a[9].toDouble() : 0;
+        r.loanPaid = a.size() > 12 ? a[10].toDouble() : 0;
+        r.debt = a.size() > 12 ? a[11].toDouble() : 0;
+        r.population = a.size() > 12 ? a[12].toDouble() : 0;
         m_history << r;
     }
     const QJsonArray cur = o.value("current").toArray();
@@ -1351,6 +1393,10 @@ bool Metro::load(const QJsonObject &o)
     }
     if (cur.size() > 3)
         m_current.goalPoints = cur[3].toDouble();
+    if (cur.size() > 5) {
+        m_current.subsidy = cur[4].toDouble();
+        m_current.loanPaid = cur[5].toDouble();
+    }
     m_totalInvested = o.value("invested").toDouble();
     // anciennes sauvegardes : cumuls reconstitués à partir de l'historique
     double histRevenue = m_current.revenue, histOperating = m_current.operating;
@@ -1363,6 +1409,8 @@ bool Metro::load(const QJsonObject &o)
     m_simMinutes = o.value("simMinutes").toDouble(0);
     loadEvents(o);
     loadGoals(o.value("goals").toObject()); // absent (ancienne sauvegarde) : objectifs repris du début
+    loadEconomy(o.value("economy").toObject());
+    buildGrid(); // croissance urbaine sauvegardée
     // anciennes sauvegardes sans historique : on repart du mois en cours
     m_financeSeconds = std::max(m_financeSeconds, m_history.size() * Rules::SecondsPerMonth);
     if (m_financeSeconds >= (m_history.size() + 1) * Rules::SecondsPerMonth)
