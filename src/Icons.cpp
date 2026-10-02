@@ -274,6 +274,12 @@ void draw(QPainter &p, Id id, const QColor &c)
         p.drawEllipse(QPointF(3, 7), 1.6, 1.6);
         p.drawEllipse(QPointF(21, 14), 1.6, 1.6);
         break;
+    case ChevronLeft:
+        p.drawPath(poly({{14.5, 6}, {8.5, 12}, {14.5, 18}}));
+        break;
+    case ChevronRight:
+        p.drawPath(poly({{9.5, 6}, {15.5, 12}, {9.5, 18}}));
+        break;
     case Undo:
     case Redo: {
         p.save();

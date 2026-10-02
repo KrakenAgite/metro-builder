@@ -135,6 +135,7 @@ private:
     // indicateurs
     Card *m_statsCard;
     StatChip *m_moneyChip, *m_dateChip, *m_ridersChip, *m_captureChip, *m_coverChip;
+    QWidget *m_captureSep = nullptr, *m_coverSep = nullptr;
 
     // dock du bas
     Card *m_dock;
@@ -145,6 +146,10 @@ private:
     QToolButton *m_financeBtn;
     QToolButton *m_soundBtn;
     QWidget *m_badgeBox;
+    class QScrollArea *m_badgeScroll = nullptr;
+    QToolButton *m_badgePrev, *m_badgeNext;
+    QToolButton *m_overlayMenuBtn; // calques regroupés dans un menu quand le dock manque de place
+    void updateBadgeArrows();
 
     // éditeur de ligne
     Card *m_lineCard;

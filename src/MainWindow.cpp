@@ -39,6 +39,8 @@
 #include <functional>
 #include <QWidgetAction>
 #include <QScrollArea>
+#include <QWheelEvent>
+#include <QScrollBar>
 #include <QSettings>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -159,7 +161,7 @@ MainWindow::MainWindow(QWidget *parent)
         a.setSfxVolume(s.value("audio/sfxVolume", 0.7).toFloat());
         a.setMuted(s.value("audio/muted", false).toBool());
     }
-    setMinimumSize(900, 520);
+    setMinimumSize(1000, 560);
 
     m_root = new QWidget;
     m_root->installEventFilter(this);
@@ -529,8 +531,14 @@ Card *MainWindow::buildStatsCard()
     m_coverChip = new StatChip(Icons::Home, tr("Habitants à distance de marche d'une station en service"));
     QWidget *chips[] = {m_moneyChip, m_dateChip, m_ridersChip, m_captureChip, m_coverChip};
     for (int i = 0; i < 5; ++i) {
-        if (i)
-            lay->addWidget(vSeparator());
+        if (i) {
+            QWidget *sep = vSeparator();
+            lay->addWidget(sep);
+            if (i == 3)
+                m_captureSep = sep;
+            if (i == 4)
+                m_coverSep = sep;
+        }
         lay->addWidget(chips[i]);
     }
     return card;
@@ -571,11 +579,34 @@ Card *MainWindow::buildDock()
     lay->addSpacing(6);
 
     // Lignes
+    // pastilles des lignes : bande défilante (molette ou flèches) quand elles ne tiennent pas dans le dock
+    m_badgePrev = iconButton(Icons::ChevronLeft, tr("Lignes précédentes"), false, 28);
+    m_badgeNext = iconButton(Icons::ChevronRight, tr("Lignes suivantes"), false, 28);
     m_badgeBox = new QWidget;
+    m_badgeBox->setAttribute(Qt::WA_TranslucentBackground);
     m_badgeLayout = new QHBoxLayout(m_badgeBox);
     m_badgeLayout->setContentsMargins(0, 0, 0, 0);
     m_badgeLayout->setSpacing(2);
-    lay->addWidget(m_badgeBox);
+    m_badgeLayout->setSizeConstraint(QLayout::SetFixedSize);
+    m_badgeScroll = new QScrollArea;
+    m_badgeScroll->setWidget(m_badgeBox);
+    m_badgeScroll->setFrameShape(QFrame::NoFrame);
+    m_badgeScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_badgeScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_badgeScroll->setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }");
+    m_badgeScroll->viewport()->setAutoFillBackground(false);
+    m_badgeScroll->viewport()->installEventFilter(this); // molette → défilement horizontal
+    auto scrollBy = [this](int dir) {
+        QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
+        bar->setValue(bar->value() + dir * std::max(84, m_badgeScroll->width() - 84));
+    };
+    connect(m_badgePrev, &QToolButton::clicked, this, [scrollBy] { scrollBy(-1); });
+    connect(m_badgeNext, &QToolButton::clicked, this, [scrollBy] { scrollBy(1); });
+    connect(m_badgeScroll->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateBadgeArrows);
+    connect(m_badgeScroll->horizontalScrollBar(), &QScrollBar::rangeChanged, this, &MainWindow::updateBadgeArrows);
+    lay->addWidget(m_badgePrev);
+    lay->addWidget(m_badgeScroll);
+    lay->addWidget(m_badgeNext);
     auto *add = iconButton(Icons::Plus, tr("Nouvelle ligne — N (numéro) · Maj+N (lettre)"), false, 40);
     add->setStyleSheet("QToolButton { border: 1.5px dashed rgba(255,255,255,0.25); border-radius: 20px; }"
                        "QToolButton:hover { border-color: #4C8DFF; }");
@@ -611,10 +642,25 @@ Card *MainWindow::buildDock()
         {Icons::Gauge, tr("Calque : charge des lignes"), MapView::Load},
         {Icons::EyeOff, tr("Aucun calque"), MapView::NoOverlay},
     };
+    m_overlayMenuBtn = iconButton(Icons::Flame, tr("Calques de la carte"), false, 40);
+    auto *overlayMenu = new QMenu(m_overlayMenuBtn);
+    overlayMenu->setWindowFlags(overlayMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    overlayMenu->setAttribute(Qt::WA_TranslucentBackground);
+    m_overlayMenuBtn->setMenu(overlayMenu);
+    m_overlayMenuBtn->setPopupMode(QToolButton::InstantPopup);
+    m_overlayMenuBtn->hide();
+    lay->addWidget(m_overlayMenuBtn);
     for (const auto &o : overlays) {
         auto *b = iconButton(o.icon, o.tip, true, 40);
         m_overlayGroup->addButton(b, o.ov);
         lay->addWidget(b);
+        const int id = o.ov;
+        const Icons::Id icon = o.icon;
+        overlayMenu->addAction(Icons::icon(icon), o.tip, this, [this, id] { m_overlayGroup->button(id)->click(); });
+        connect(b, &QToolButton::toggled, this, [this, icon](bool on) {
+            if (on)
+                m_overlayMenuBtn->setIcon(Icons::icon(icon));
+        });
     }
     m_overlayGroup->button(MapView::Demand)->setChecked(true);
     connect(m_overlayGroup, &QButtonGroup::idClicked, this,
@@ -2198,6 +2244,13 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         layoutOverlays();
     if (watched == m_moneyChip && event->type() == QEvent::MouseButtonPress)
         m_financeBtn->toggle();
+    if (m_badgeScroll && watched == m_badgeScroll->viewport() && event->type() == QEvent::Wheel) {
+        const auto *we = static_cast<QWheelEvent *>(event);
+        const int delta = we->angleDelta().y() != 0 ? we->angleDelta().y() : we->angleDelta().x();
+        QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
+        bar->setValue(bar->value() - delta / 2);
+        return true;
+    }
     return QMainWindow::eventFilter(watched, event);
 }
 
@@ -2219,10 +2272,57 @@ void MainWindow::layoutOverlays()
         m_cityCard->move(kMargin, kMargin);
     }
 
+    // indicateurs : sur une fenêtre étroite, les moins essentiels s'effacent pour ne pas chevaucher la recherche
+    {
+        const int free = W - 2 * kMargin - (hasCity ? m_cityCard->width() - Card::Shadow : 0);
+        QWidget *optional[][2] = {{m_coverChip, m_coverSep}, {m_captureChip, m_captureSep}};
+        for (auto &pair : optional)
+            for (QWidget *w : pair)
+                w->setVisible(true);
+        m_statsCard->adjustSize();
+        for (auto &pair : optional) {
+            if (m_statsCard->sizeHint().width() <= free)
+                break;
+            for (QWidget *w : pair)
+                w->setVisible(false);
+            m_statsCard->adjustSize();
+        }
+    }
     m_statsCard->adjustSize();
     m_statsCard->move(W - m_statsCard->width() - kMargin, kMargin);
 
+    // dock : jamais plus large que la fenêtre ; la bande des lignes absorbe le manque de place
+    const int badgesW = m_badgeBox->sizeHint().width();
+    m_badgeScroll->setFixedSize(badgesW, m_badgeBox->sizeHint().height());
+    m_badgePrev->setVisible(false);
+    m_badgeNext->setVisible(false);
+    const int maxDock = W - 2 * kMargin;
+    // dock compact : les 5 calques deviennent un seul bouton à menu si la place manque
+    {
+        const int minBadges = std::min(badgesW, 3 * 42) + (badgesW > 3 * 42 ? 2 * (28 + 4) : 0);
+        for (QAbstractButton *b : m_overlayGroup->buttons())
+            b->setVisible(true);
+        m_overlayMenuBtn->setVisible(false);
+        m_badgeScroll->setFixedWidth(minBadges);
+        m_dock->adjustSize();
+        const bool compact = m_dock->sizeHint().width() > maxDock;
+        for (QAbstractButton *b : m_overlayGroup->buttons())
+            b->setVisible(!compact);
+        m_overlayMenuBtn->setVisible(compact);
+        m_badgeScroll->setFixedWidth(badgesW);
+    }
     m_dock->adjustSize();
+    if (m_dock->sizeHint().width() > maxDock && m_badgeScroll->isVisible()) {
+        const int arrows = 2 * (m_badgePrev->sizeHint().width() + 4);
+        const int excess = m_dock->sizeHint().width() + arrows - maxDock;
+        m_badgeScroll->setFixedWidth(std::max(84, badgesW - excess));
+        m_badgePrev->setVisible(true);
+        m_badgeNext->setVisible(true);
+        m_dock->adjustSize();
+    }
+    if (m_dock->width() > maxDock)
+        m_dock->resize(maxDock, m_dock->height());
+    updateBadgeArrows();
     const int dockTop = H - m_dock->height() - kMargin;
     m_dock->move((W - m_dock->width()) / 2, dockTop);
 
@@ -2616,7 +2716,24 @@ void MainWindow::refreshLines()
         connect(b, &LineBadge::clicked, this, [this, id] { selectLine(id == m_currentLine ? -1 : id); });
         m_badgeLayout->addWidget(b);
     }
-    m_badgeBox->setVisible(!m_metro->lines().isEmpty());
+    m_badgeScroll->setVisible(!m_metro->lines().isEmpty());
+    // la ligne sélectionnée reste visible dans la bande
+    QTimer::singleShot(0, this, [this] {
+        for (auto *b : m_badgeBox->findChildren<LineBadge *>())
+            if (b->isChecked())
+                m_badgeScroll->ensureWidgetVisible(b, 8, 0);
+        updateBadgeArrows();
+    });
+}
+
+void MainWindow::updateBadgeArrows()
+{
+    const QScrollBar *bar = m_badgeScroll->horizontalScrollBar();
+    const bool overflow = bar->maximum() > 0 && m_badgeScroll->isVisible();
+    m_badgePrev->setVisible(overflow);
+    m_badgeNext->setVisible(overflow);
+    m_badgePrev->setEnabled(bar->value() > 0);
+    m_badgeNext->setEnabled(bar->value() < bar->maximum());
 }
 
 void MainWindow::refreshLineEditor()
