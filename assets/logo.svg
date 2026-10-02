@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="256" height="256">
+  <!-- Logo Metro Builder : un « M » tracé comme un plan de métro -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E2533"/>
+      <stop offset="1" stop-color="#10141B"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="5.5" fill="url(#bg)" stroke="#ffffff" stroke-opacity="0.18" stroke-width="0.6"/>
+  <g fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 18.5V6" stroke="#FFCD00"/>
+    <path d="M6 6L12 12L18 6" stroke="#3987E5"/>
+    <path d="M18 6V18.5" stroke="#E3051C"/>
+  </g>
+  <g fill="#fff" stroke="#10141B" stroke-width="1.1">
+    <circle cx="6" cy="6" r="2.1"/>
+    <circle cx="18" cy="6" r="2.1"/>
+    <circle cx="12" cy="12" r="1.6"/>
+    <circle cx="6" cy="18.5" r="1.4"/>
+    <circle cx="18" cy="18.5" r="1.4"/>
+  </g>
+</svg>

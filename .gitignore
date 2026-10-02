@@ -1,0 +1,11 @@
+# compilations et paquets
+build/
+build-*/
+dist/
+# compilateur et Qt pour Windows (téléchargés, ~600 Mo) — voir README
+win-toolchain/*
+!win-toolchain/mingw-toolchain.cmake
+# anciennes copies d'avant le déplacement du projet
+/metro/
+/test/
+*.user
