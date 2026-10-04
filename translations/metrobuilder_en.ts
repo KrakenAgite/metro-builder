@@ -435,10 +435,6 @@
         <translation>Langue / Language</translation>
     </message>
     <message>
-        <source>Tutoriel</source>
-        <translation>Tutorial</translation>
-    </message>
-    <message>
         <source>Chargez d'abord une ville pour suivre le tutoriel</source>
         <translation>Load a city first to follow the tutorial</translation>
     </message>
@@ -1065,10 +1061,6 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>À vous de jouer</source>
         <translation>Your turn</translation>
-    </message>
-    <message>
-        <source>Tutoriel · étape %1 sur %2</source>
-        <translation>Tutorial · step %1 of %2</translation>
     </message>
     <message>
         <source>Terminer</source>
@@ -1767,10 +1759,6 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>The coloured dots are your trains. Around the stations the map turns green: demand is captured there. Bottom right, the layers button also shows residents, jobs and line load.</translation>
     </message>
     <message>
-        <source>Le bouton Affichage (en bas à droite) ouvre objectifs, finances, plan schématique et carte sombre ; celui d'à côté règle la vitesse du temps. L'aide complète est sous F1. Bonne construction !</source>
-        <translation>The Display button (bottom right) opens objectives, finances, the schematic map and the dark map; the one next to it sets the speed of time. Full help is under F1. Happy building!</translation>
-    </message>
-    <message>
         <source>Choisissez ou créez une ligne avec le bouton Lignes, en bas à gauche</source>
         <translation>Choose or create a line with the Lines button, bottom left</translation>
     </message>
@@ -1805,6 +1793,362 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>%1 · semaine %2, année %3</source>
         <translation>%1 · week %2, year %3</translation>
+    </message>
+    <message>
+        <source>Tutoriels…</source>
+        <translation>Tutorials…</translation>
+    </message>
+    <message>
+        <source>Les bases</source>
+        <translation>The basics</translation>
+    </message>
+    <message>
+        <source>Stations, première ligne, rames, budget : de quoi commencer.</source>
+        <translation>Stations, a first line, trains, budget: enough to get started.</translation>
+    </message>
+    <message>
+        <source>Tracés et arrêts</source>
+        <translation>Tracks and stops</translation>
+    </message>
+    <message>
+        <source>Courber un tracé, réordonner les arrêts, boucler une ligne, démolir.</source>
+        <translation>Curve a track, reorder stops, make a loop line, demolish.</translation>
+    </message>
+    <message>
+        <source>Exploitation des lignes</source>
+        <translation>Line operation</translation>
+    </message>
+    <message>
+        <source>Longueur et nombre de rames, charge, heures creuses, matériel.</source>
+        <translation>Train length and number, load, off-peak service, rolling stock.</translation>
+    </message>
+    <message>
+        <source>Finances et politique</source>
+        <translation>Finances and policy</translation>
+    </message>
+    <message>
+        <source>Prix du ticket, subventions, emprunts, entretien, graphiques.</source>
+        <translation>Ticket price, subsidies, loans, maintenance, charts.</translation>
+    </message>
+    <message>
+        <source>Correspondances et itinéraires</source>
+        <translation>Transfers and routes</translation>
+    </message>
+    <message>
+        <source>Relier deux lignes et calculer un trajet porte à porte.</source>
+        <translation>Connect two lines and compute a door-to-door trip.</translation>
+    </message>
+    <message>
+        <source>Tunnels et viaducs</source>
+        <translation>Tunnels and viaducts</translation>
+    </message>
+    <message>
+        <source>Vue en coupe, passages sous les fleuves, viaducs moins chers.</source>
+        <translation>Cross-section, river crossings, cheaper viaducts.</translation>
+    </message>
+    <message>
+        <source>Carte et affichage</source>
+        <translation>Map and display</translation>
+    </message>
+    <message>
+        <source>Calques, plan schématique, carte sombre, jour / nuit, export.</source>
+        <translation>Layers, schematic map, dark map, day / night, export.</translation>
+    </message>
+    <message>
+        <source>Temps, événements et objectifs</source>
+        <translation>Time, events and objectives</translation>
+    </message>
+    <message>
+        <source>Vitesse du temps, événements à décisions, score, sauvegardes.</source>
+        <translation>Speed of time, decision events, score, saves.</translation>
+    </message>
+    <message>
+        <source>Scénarios, métro réel, bac à sable et succès.</source>
+        <translation>Scenarios, real metro, sandbox and achievements.</translation>
+    </message>
+    <message>
+        <source>Il faut une ligne</source>
+        <translation>You need a line</translation>
+    </message>
+    <message>
+        <source>Cette leçon s'appuie sur une ligne en service. Construisez deux stations (outil Station, touche 2), créez une ligne avec le bouton Lignes puis cliquez les stations.</source>
+        <translation>This lesson relies on a line in service. Build two stations (Station tool, key 2), create a line with the Lines button, then click the stations.</translation>
+    </message>
+    <message>
+        <source>Sélectionnez une ligne</source>
+        <translation>Select a line</translation>
+    </message>
+    <message>
+        <source>Ouvrez le bouton Lignes (en bas à gauche) et choisissez une ligne, ou cliquez sur son tracé : sa fiche s'ouvre à gauche.</source>
+        <translation>Open the Lines button (bottom left) and choose a line, or click its track: its panel opens on the left.</translation>
+    </message>
+    <message>
+        <source>Vous connaissez l'essentiel. D'autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !</source>
+        <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in ☰ → Help → Tutorials, whenever you like. Happy building!</translation>
+    </message>
+    <message>
+        <source>Courbez un tracé</source>
+        <translation>Curve a track</translation>
+    </message>
+    <message>
+        <source>Avec l'outil Sélection (1), saisissez le milieu d'un tracé et glissez-le : un point de passage apparaît et la ligne se courbe pour éviter un quartier ou suivre une avenue.</source>
+        <translation>With the Select tool (1), grab the middle of a track and drag it: a waypoint appears and the line curves to avoid a neighbourhood or follow an avenue.</translation>
+    </message>
+    <message>
+        <source>Ajustez ou supprimez</source>
+        <translation>Adjust or delete</translation>
+    </message>
+    <message>
+        <source>Glissez la poignée blanche pour déplacer le point de passage ; un clic droit dessus le supprime. Le tunnel ajouté ou retiré est facturé ou remboursé au kilomètre.</source>
+        <translation>Drag the white handle to move the waypoint; right-click it to delete it. The tunnel added or removed is charged or refunded per kilometre.</translation>
+    </message>
+    <message>
+        <source>Réordonnez les arrêts</source>
+        <translation>Reorder the stops</translation>
+    </message>
+    <message>
+        <source>Dans la fiche de la ligne, glissez un arrêt dans la liste, ou utilisez les flèches ↑ ↓. Le bouton ⇄ inverse le sens, « Boucle » relie le dernier arrêt au premier.</source>
+        <translation>In the line panel, drag a stop in the list, or use the ↑ ↓ arrows. The ⇄ button reverses the direction, « Loop » links the last stop to the first.</translation>
+    </message>
+    <message>
+        <source>Prolongez ou raccourcissez</source>
+        <translation>Extend or shorten</translation>
+    </message>
+    <message>
+        <source>Avec l'outil Tracer (3), un clic ajoute une station en bout de ligne, Ctrl+clic en tête, un clic droit retire l'arrêt.</source>
+        <translation>With the Lay out tool (3), a click adds a station at the end of the line, Ctrl+click at the start, a right click removes the stop.</translation>
+    </message>
+    <message>
+        <source>L'outil Démolir (4) supprime une station ou un point de passage : la moitié du coût est remboursée. Ctrl+Z annule n'importe quelle modification et rembourse tout.</source>
+        <translation>The Demolish tool (4) removes a station or a waypoint: half the cost is refunded. Ctrl+Z undoes any change and refunds everything.</translation>
+    </message>
+    <message>
+        <source>Longueur et nombre de rames</source>
+        <translation>Train length and number</translation>
+    </message>
+    <message>
+        <source>Choisissez 3, 4 ou 5 voitures par rame, et ajoutez ou retirez des rames avec + et −. Plus de rames = attente plus courte et plus de capacité, mais plus de coûts. Modifiez une ligne pour continuer.</source>
+        <translation>Choose 3, 4 or 5 cars per train, and add or remove trains with + and −. More trains = shorter waits and more capacity, but higher costs. Change a line to continue.</translation>
+    </message>
+    <message>
+        <source>Repérez les lignes saturées</source>
+        <translation>Spot saturated lines</translation>
+    </message>
+    <message>
+        <source>Choisissez le calque « charge des lignes » (bouton des calques, en bas à droite) : plus un tronçon est épais et rouge, plus il est plein. Une ligne saturée perd des voyageurs.</source>
+        <translation>Choose the « line load » layer (layers button, bottom right): the thicker and redder a section, the fuller it is. A saturated line loses passengers.</translation>
+    </message>
+    <message>
+        <source>En dehors des heures de pointe, vous pouvez ne garder que 75 % ou 50 % des rames : l'exploitation coûte moins cher, au prix d'un peu moins de voyageurs.</source>
+        <translation>Outside rush hours you can keep only 75% or 50% of the trains: operation costs less, at the price of slightly fewer passengers.</translation>
+    </message>
+    <message>
+        <source>Matériel qui vieillit</source>
+        <translation>Ageing rolling stock</translation>
+    </message>
+    <message>
+        <source>Après 5 ans, des rames tombent en panne. La fiche indique l'âge et le risque ; « Renouveler » remplace tout le matériel pour 60 % du prix neuf.</source>
+        <translation>After 5 years, trains break down. The panel shows the age and the risk; « Renew » replaces all the rolling stock for 60% of the new price.</translation>
+    </message>
+    <message>
+        <source>Ouvrez les finances</source>
+        <translation>Open the finances</translation>
+    </message>
+    <message>
+        <source>Bouton Affichage (en bas à droite) → portefeuille, ou touche B.</source>
+        <translation>Display button (bottom right) → wallet, or key B.</translation>
+    </message>
+    <message>
+        <source>Un ticket plus cher rapporte plus par voyage mais fait fuir des voyageurs ; la recette est maximale vers 1,80 €. Un ticket bon marché augmente la demande captée, et donc le score.</source>
+        <translation>A pricier ticket earns more per trip but drives passengers away; revenue peaks around €1.80. A cheap ticket raises captured demand, and so the score.</translation>
+    </message>
+    <message>
+        <source>Subvention et emprunts</source>
+        <translation>Subsidy and loans</translation>
+    </message>
+    <message>
+        <source>La ville subventionne jusqu'à 40 % de l'exploitation si votre métro capte bien la demande. Les emprunts (4 %/an sur 10 ans) financent un gros chantier ; on peut les rembourser d'un coup.</source>
+        <translation>The city subsidises up to 40% of operating costs if your metro captures demand well. Loans (4%/year over 10 years) fund a big project; they can be repaid in one go.</translation>
+    </message>
+    <message>
+        <source>Entretien</source>
+        <translation>Maintenance</translation>
+    </message>
+    <message>
+        <source>Réduit, normal ou renforcé : un entretien renforcé coûte plus cher mais les rames vieillissent moins vite et tombent rarement en panne.</source>
+        <translation>Reduced, normal or thorough: thorough maintenance costs more but trains age more slowly and rarely break down.</translation>
+    </message>
+    <message>
+        <source>Graphiques</source>
+        <translation>Charts</translation>
+    </message>
+    <message>
+        <source>Trésorerie, recettes, résultat, fréquentation, population, score… choisissez la période en haut du panneau, et survolez une courbe pour lire les valeurs d'un mois.</source>
+        <translation>Cash, revenue, result, ridership, population, score… choose the period at the top of the panel, and hover a curve to read a month's values.</translation>
+    </message>
+    <message>
+        <source>Créez une correspondance</source>
+        <translation>Create a transfer</translation>
+    </message>
+    <message>
+        <source>Une station desservie par deux lignes permet de changer de ligne. Sélectionnez une ligne, outil Tracer (3), puis cliquez une station déjà desservie par une autre ligne.</source>
+        <translation>A station served by two lines lets passengers change lines. Select a line, Lay out tool (3), then click a station already served by another line.</translation>
+    </message>
+    <message>
+        <source>Calculez un itinéraire</source>
+        <translation>Compute a route</translation>
+    </message>
+    <message>
+        <source>Choisissez l'outil Itinéraire (5), puis cliquez un point de départ et un point d'arrivée n'importe où sur la carte.</source>
+        <translation>Choose the Route tool (5), then click a start point and a destination anywhere on the map.</translation>
+    </message>
+    <message>
+        <source>Lisez le trajet</source>
+        <translation>Read the trip</translation>
+    </message>
+    <message>
+        <source>La fiche indique la marche, l'attente, chaque ligne avec sa direction et les correspondances, et compare au temps à pied. Le trajet se recalcule quand vous modifiez le réseau.</source>
+        <translation>The panel shows walking, waiting, each line with its direction and the transfers, and compares with walking. The route is recomputed when you change the network.</translation>
+    </message>
+    <message>
+        <source>Ouvrez la vue en coupe</source>
+        <translation>Open the cross-section</translation>
+    </message>
+    <message>
+        <source>Dans la fiche de la ligne, cliquez « Vue en coupe : tunnels et viaducs ».</source>
+        <translation>In the line panel, click « Cross-section: tunnels and viaducts ».</translation>
+    </message>
+    <message>
+        <source>Passez un tronçon en viaduc</source>
+        <translation>Switch a section to viaduct</translation>
+    </message>
+    <message>
+        <source>Survolez un tronçon pour voir son coût, puis cliquez-le : il passe en viaduc, environ 45 % moins cher qu'un tunnel.</source>
+        <translation>Hover a section to see its cost, then click it: it becomes a viaduct, about 45% cheaper than a tunnel.</translation>
+    </message>
+    <message>
+        <source>Le revers du viaduc</source>
+        <translation>The downside of viaducts</translation>
+    </message>
+    <message>
+        <source>Un viaduc est bruyant : les quartiers qu'il traverse se densifient bien moins vite. Sous un fleuve, le tunnel descend plus bas et coûte 60 % de plus ; un pont reste un peu moins cher. Recliquez un tronçon pour le remettre en tunnel.</source>
+        <translation>A viaduct is noisy: the neighbourhoods it crosses grow much more slowly. Under a river the tunnel goes deeper and costs 60% more; a bridge stays slightly cheaper. Click a section again to put it back in a tunnel.</translation>
+    </message>
+    <message>
+        <source>Les calques</source>
+        <translation>Layers</translation>
+    </message>
+    <message>
+        <source>Bouton des calques (en bas à droite) : demande captée, densité d'habitants, d'emplois, charge des lignes. Affichez la densité d'habitants pour continuer.</source>
+        <translation>Layers button (bottom right): captured demand, resident density, job density, line load. Show resident density to continue.</translation>
+    </message>
+    <message>
+        <source>Le plan schématique</source>
+        <translation>The schematic map</translation>
+    </message>
+    <message>
+        <source>Bouton Affichage → plan (ou touche M) : votre réseau redessiné comme un vrai plan de métro. Ouvrez-le pour continuer.</source>
+        <translation>Display button → map (or key M): your network redrawn like a real metro map. Open it to continue.</translation>
+    </message>
+    <message>
+        <source>Retour à la carte</source>
+        <translation>Back to the map</translation>
+    </message>
+    <message>
+        <source>Touche M, ou le même bouton, pour revenir à la carte.</source>
+        <translation>Key M, or the same button, to return to the map.</translation>
+    </message>
+    <message>
+        <source>Ambiance</source>
+        <translation>Atmosphere</translation>
+    </message>
+    <message>
+        <source>Bouton Affichage → lune pour la carte sombre. La journée défile : la nuit, la carte s'assombrit et le métro ferme de 1 h à 5 h (désactivable dans ☰ → Carte).</source>
+        <translation>Display button → moon for the dark map. The day goes by: at night the map darkens and the metro closes from 1 am to 5 am (can be turned off in ☰ → Map).</translation>
+    </message>
+    <message>
+        <source>Exporter le plan</source>
+        <translation>Export the map</translation>
+    </message>
+    <message>
+        <source>Ctrl+E (ou ☰ → Carte) enregistre le plan du réseau en PNG ou en PDF, prêt à imprimer.</source>
+        <translation>Ctrl+E (or ☰ → Map) saves the network map as PNG or PDF, ready to print.</translation>
+    </message>
+    <message>
+        <source>La vitesse du temps</source>
+        <translation>The speed of time</translation>
+    </message>
+    <message>
+        <source>Bouton de vitesse (en bas à droite) : pause, ×1, ×3 ou ×10 ; Espace met en pause. Passez en ×3 ou ×10 pour continuer.</source>
+        <translation>Speed button (bottom right): pause, ×1, ×3 or ×10; Space pauses. Switch to ×3 or ×10 to continue.</translation>
+    </message>
+    <message>
+        <source>Objectifs et score</source>
+        <translation>Objectives and score</translation>
+    </message>
+    <message>
+        <source>Le panneau trophée liste trois objectifs : chacun rapporte des points et une prime, puis laisse place à un plus difficile. Le meilleur score de chaque ville est gardé.</source>
+        <translation>The trophy panel lists three objectives: each earns points and a bonus, then makes way for a harder one. Each city's best score is kept.</translation>
+    </message>
+    <message>
+        <source>Événements</source>
+        <translation>Events</translation>
+    </message>
+    <message>
+        <source>Grèves, pannes, matchs, subventions, nouveaux quartiers… apparaissent à gauche. Ceux qui demandent une décision mettent le jeu en pause jusqu'à votre choix.</source>
+        <translation>Strikes, breakdowns, matches, subsidies, new neighbourhoods… appear on the left. Those that need a decision pause the game until you choose.</translation>
+    </message>
+    <message>
+        <source>Sauvegardes</source>
+        <translation>Saves</translation>
+    </message>
+    <message>
+        <source>La partie est sauvegardée automatiquement (réglable dans ☰ → Partie). Ctrl+S enregistre où vous voulez, et un double-clic sur un fichier .metro relance la partie.</source>
+        <translation>The game is saved automatically (adjustable in ☰ → Game). Ctrl+S saves wherever you like, and double-clicking a .metro file reopens the game.</translation>
+    </message>
+    <message>
+        <source>☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et jusqu'à trois étoiles.</source>
+        <translation>☰ → Challenges → Scenarios: six missions in great cities, with a budget, a deadline and up to three stars.</translation>
+    </message>
+    <message>
+        <source>Le vrai métro</source>
+        <translation>The real metro</translation>
+    </message>
+    <message>
+        <source>☰ → Défis → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité et la prolonger.</source>
+        <translation>☰ → Challenges → Import the real metro: the city's existing lines, to start from reality and extend it.</translation>
+    </message>
+    <message>
+        <source>Bac à sable et succès</source>
+        <translation>Sandbox and achievements</translation>
+    </message>
+    <message>
+        <source>Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent au fil de vos parties et sont gardés d'une partie à l'autre.</source>
+        <translation>Sandbox makes construction free, with no score. Achievements (☰ → Challenges) unlock as you play and are kept from one game to the next.</translation>
+    </message>
+    <message>
+        <source>Tutoriels</source>
+        <translation>Tutorials</translation>
+    </message>
+    <message>
+        <source>Des leçons courtes et indépendantes : suivez seulement celles qui vous intéressent. Chacune se quitte à tout moment.</source>
+        <translation>Short, independent lessons: follow only the ones that interest you. Each can be left at any time.</translation>
+    </message>
+    <message>
+        <source>Revoir</source>
+        <translation>Review</translation>
+    </message>
+    <message>
+        <source>Commencer</source>
+        <translation>Start</translation>
+    </message>
+    <message>
+        <source>%1 · étape %2 sur %3</source>
+        <translation>%1 · step %2 of %3</translation>
+    </message>
+    <message>
+        <source>Quitter la leçon</source>
+        <translation>Leave the lesson</translation>
     </message>
 </context>
 <context>

@@ -68,10 +68,23 @@ private:
     void enterSandbox();
     void refreshUndo();
     Card *buildTutorialCard();
-    void startTutorial();
+    Card *buildLessonsCard();
+    struct Lesson {
+        QString id, title, description;
+    };
+    struct TutStep {
+        QString title, text;
+        std::function<QWidget *()> target; // élément désigné (peut changer en cours d'étape)
+        std::function<bool()> done;        // condition qui fait passer à la suite (sinon « Suivant »)
+        bool skipIfDone = false;           // étape préalable sautée si déjà remplie
+    };
+    static const QVector<Lesson> &lessons();
+    QVector<TutStep> lessonSteps(const QString &id);
+    void showLessons();
+    void startTutorial(const QString &lesson);
     void showTutorialStep(int step);
     void checkTutorial();
-    void endTutorial();
+    void endTutorial(bool completed);
     void setLanguage(const QString &lang);
     Card *buildScenarioCard();
     Card *buildAchievementsCard();
@@ -207,7 +220,11 @@ private:
     QPushButton *m_tutSkip, *m_tutNext;
     QWidget *m_tutRing = nullptr;
     int m_tutorialStep = -1;
-    int m_tutStations = 0;
+    QString m_tutLesson;
+    QVector<TutStep> m_tutSteps;
+    Card *m_lessonsCard;
+    QVBoxLayout *m_lessonList;
+    QToolButton *m_gameMenuBtn;
     std::function<bool()> m_tutorialDone;
     QToolButton *m_addLineBtn;
 

@@ -34,7 +34,7 @@ Le son passe par waveOut (winmm) sous Windows.
 
 ```bash
 scripts/build-deb.sh                                  # → dist/metrobuilder_<version>_amd64.deb
-sudo apt install ./dist/metrobuilder_1.9.0_amd64.deb   # puis « Metro Builder » dans le menu des jeux
+sudo apt install ./dist/metrobuilder_1.10.0_amd64.deb  # puis « Metro Builder » dans le menu des jeux
 ```
 
 Le paquet associe aussi les sauvegardes `.metro` au jeu : elles ont leur propre icône (document au logo) et
@@ -154,9 +154,12 @@ L'interface est une carte plein écran avec des panneaux flottants :
   (tablier et piliers).
 
 **Confort**
-- **Tutoriel** : proposé automatiquement à la première partie (et ☰ → Tutoriel) : 7 étapes guidées — construire
-  des stations, tracer une ligne, lire la carte, régler les trains, le budget, les objectifs. Un anneau doré
-  désigne le bouton à utiliser et l'étape suivante arrive d'elle-même quand l'action est faite.
+- **Tutoriels** : des leçons courtes et indépendantes, à choisir dans ☰ → Aide → Tutoriels (ou ☰ → Défis) :
+  *Les bases* (proposée automatiquement à la première partie), *Tracés et arrêts*, *Exploitation des lignes*,
+  *Finances et politique*, *Correspondances et itinéraires*, *Tunnels et viaducs*, *Carte et affichage*,
+  *Temps, événements et objectifs*, *Défis*. On ne suit que celles qui intéressent ; une coche marque les leçons
+  terminées. Un anneau doré désigne l'élément à utiliser, l'étape suivante arrive d'elle-même quand l'action est
+  faite, et les étapes préalables déjà remplies (« il faut une ligne ») sont sautées.
 - **Langue** : ☰ → Langue / Language : français ou anglais (par défaut, la langue du système). Le jeu redémarre
   pour changer de langue, la partie est sauvegardée automatiquement. Les textes sont dans
   `translations/metrobuilder_en.ts` (à recompiler avec `lrelease translations/metrobuilder_en.ts`), le fichier

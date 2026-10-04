@@ -212,9 +212,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_achievementsCard = buildAchievementsCard();
     m_missionEndCard = buildMissionEndCard();
     m_tutorialCard = buildTutorialCard();
+    m_lessonsCard = buildLessonsCard();
     buildEventCards();
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_dockRight, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
                     m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
+                    m_lessonsCard,
                     m_eventsCard, m_newsCard, m_decisionCard})
         c->setParent(m_root);
     m_statsCard->hide();
@@ -227,6 +229,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_routeCard->hide();
     m_profileCard->hide();
     m_tutorialCard->hide();
+    m_lessonsCard->hide();
     m_scenarioCard->hide();
     m_achievementsCard->hide();
     m_missionEndCard->hide();
@@ -236,6 +239,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_toast = new Toast(m_root);
     for (Card *c : {m_cityCard, m_statsCard, m_dock, m_dockRight, m_lineCard, m_stationCard, m_financeCard, m_goalsCard,
                     m_routeCard, m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_tutorialCard,
+                    m_lessonsCard,
                     m_eventsCard, m_newsCard, m_decisionCard})
         c->ensurePolished();
     // un clic sur le budget ouvre les finances
@@ -433,6 +437,7 @@ Card *MainWindow::buildCityCard()
     connect(m_cityEdit, &QLineEdit::returnPressed, this, &MainWindow::loadCity);
 
     auto *menuBtn = iconButton(Icons::Menu, tr("Menu"), false, 36);
+    m_gameMenuBtn = menuBtn;
     // Modèle du menu : cinq rubriques (sous-menus) affichées par l'écran de menu plein écran ;
     // les actions gardent leurs raccourcis clavier même menu fermé
     auto *menu = new QMenu(menuBtn);
@@ -610,12 +615,9 @@ Card *MainWindow::buildCityCard()
         const QString c = code;
         connect(a, &QAction::triggered, this, [this, c] { setLanguage(c); });
     }
-    QAction *tutorialAct = challenges->addAction(Icons::icon(Icons::Play), tr("Tutoriel"), this, [this] {
-        if (m_metro->city())
-            startTutorial();
-        else
-            m_toast->show(tr("Chargez d'abord une ville pour suivre le tutoriel"));
-    });
+    QAction *tutorialAct = challenges->addAction(Icons::icon(Icons::Play), tr("Tutoriels…"), this,
+                                                 &MainWindow::showLessons);
+    helpMenu->addAction(tutorialAct); // les leçons sont aussi dans l'aide
     helpMenu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
                         &MainWindow::showHelp);
 
@@ -2283,7 +2285,7 @@ Card *MainWindow::buildTutorialCard()
     m_tutSkip = new QPushButton(tr("Passer le tutoriel"));
     m_tutSkip->setProperty("variant", "ghost");
     m_tutSkip->setCursor(Qt::PointingHandCursor);
-    connect(m_tutSkip, &QPushButton::clicked, this, [this] { endTutorial(); });
+    connect(m_tutSkip, &QPushButton::clicked, this, [this] { endTutorial(false); });
     m_tutNext = new QPushButton(tr("Suivant"));
     m_tutNext->setProperty("variant", "primary");
     m_tutNext->setCursor(Qt::PointingHandCursor);
@@ -2297,83 +2299,368 @@ Card *MainWindow::buildTutorialCard()
     return card;
 }
 
-void MainWindow::startTutorial()
+// Leçons du tutoriel : « Les bases » est proposée à la première partie, les autres se choisissent
+// dans ☰ → Aide → Tutoriels (on n'apprend que ce qui intéresse).
+const QVector<MainWindow::Lesson> &MainWindow::lessons()
 {
-    if (!m_metro->city())
-        return;
-    m_tutStations = m_metro->stations().size();
-    showTutorialStep(0);
-}
-
-void MainWindow::endTutorial()
-{
-    m_tutorialStep = -1;
-    m_tutorialCard->hide();
-    static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
-    QSettings().setValue("tutorial/done", true);
-    layoutOverlays();
-}
-
-// Étapes : texte, élément désigné, condition qui fait passer à la suite (sinon bouton « Suivant »)
-void MainWindow::showTutorialStep(int step)
-{
-    struct Step {
-        QString title, text;
-        QWidget *target;
-        std::function<bool()> done;
+    static const QVector<Lesson> list = {
+        {"basics", tr("Les bases"), tr("Stations, première ligne, rames, budget : de quoi commencer.")},
+        {"tracks", tr("Tracés et arrêts"), tr("Courber un tracé, réordonner les arrêts, boucler une ligne, démolir.")},
+        {"operation", tr("Exploitation des lignes"), tr("Longueur et nombre de rames, charge, heures creuses, matériel.")},
+        {"finance", tr("Finances et politique"), tr("Prix du ticket, subventions, emprunts, entretien, graphiques.")},
+        {"routes", tr("Correspondances et itinéraires"), tr("Relier deux lignes et calculer un trajet porte à porte.")},
+        {"section", tr("Tunnels et viaducs"), tr("Vue en coupe, passages sous les fleuves, viaducs moins chers.")},
+        {"display", tr("Carte et affichage"), tr("Calques, plan schématique, carte sombre, jour / nuit, export.")},
+        {"game", tr("Temps, événements et objectifs"), tr("Vitesse du temps, événements à décisions, score, sauvegardes.")},
+        {"challenges", tr("Défis"), tr("Scénarios, métro réel, bac à sable et succès.")},
     };
+    return list;
+}
+
+QVector<MainWindow::TutStep> MainWindow::lessonSteps(const QString &id)
+{
     auto activeLine = [this] {
         for (const Line &l : m_metro->lines())
             if (l.segmentCount() > 0)
                 return true;
         return false;
     };
-    const QVector<Step> steps = {
-        {tr("Bienvenue à %1 !").arg(m_metro->city()->name),
-         tr("Vous dirigez le futur métro de la ville. Sur la carte, le rouge montre les quartiers où des habitants "
-            "et des emplois attendent un métro : à vous de les desservir."),
-         nullptr, {}},
-        {tr("Construisez des stations"),
-         tr("Ouvrez les outils (en bas à gauche) et choisissez Station, ou appuyez sur 2. Cliquez ensuite trois fois "
-            "sur la carte, dans des zones rouges, à environ 500 m les unes des autres. Chaque station dessert les "
-            "rues à 5 minutes à pied."),
-         m_toolsBtn,
-         [this] { return m_metro->stations().size() >= m_tutStations + 3; }},
-        {tr("Tracez une ligne"),
-         tr("Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l'outil Tracer s'active. Cliquez "
-            "ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre."),
-         m_addLineBtn, activeLine},
-        {tr("Le métro roule !"),
-         tr("Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est "
-            "captée. En bas à droite, le bouton des calques montre aussi habitants, emplois et charge des lignes."),
-         m_overlayMenuBtn, {}},
-        {tr("Réglez vos trains"),
-         tr("La fiche de la ligne, à gauche, règle la longueur des rames (3 à 5 voitures) et leur nombre. "
-            "Une ligne saturée perd des voyageurs ; une ligne vide coûte pour rien."),
-         m_lineCard->isVisible() ? static_cast<QWidget *>(m_lineCard) : m_linesBtn, {}},
-        {tr("Gérez votre budget"),
-         tr("Les voyageurs rapportent de l'argent chaque mois, les rames et les stations en coûtent. "
-            "Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien."),
-         m_displayBtn, {}},
-        {tr("À vous de jouer"),
-         tr("Le bouton Affichage (en bas à droite) ouvre objectifs, finances, plan schématique et carte sombre ; "
-            "celui d'à côté règle la vitesse du temps. L'aide complète est sous F1. Bonne construction !"),
-         m_displayBtn, {}},
+    auto w = [](QWidget *widget) { return [widget] { return widget; }; };
+    auto lineCardOr = [this](QWidget *fallback) {
+        return [this, fallback]() -> QWidget * { return m_lineCard->isVisible() ? static_cast<QWidget *>(m_lineCard) : fallback; };
     };
-    if (step < 0 || step >= steps.size()) {
-        endTutorial();
+    // étape préalable commune : il faut une ligne en service (et sélectionnée)
+    const TutStep needLine{tr("Il faut une ligne"),
+                           tr("Cette leçon s'appuie sur une ligne en service. Construisez deux stations (outil Station, "
+                              "touche 2), créez une ligne avec le bouton Lignes puis cliquez les stations."),
+                           w(m_linesBtn), activeLine, true};
+    const TutStep selectLine{tr("Sélectionnez une ligne"),
+                             tr("Ouvrez le bouton Lignes (en bas à gauche) et choisissez une ligne, ou cliquez sur son "
+                                "tracé : sa fiche s'ouvre à gauche."),
+                             w(m_linesBtn), [this] { return m_metro->line(m_currentLine) != nullptr; }, true};
+    QVector<TutStep> steps;
+
+    if (id == "basics") {
+        const int stations = m_metro->stations().size();
+        steps = {
+            {tr("Bienvenue à %1 !").arg(m_metro->city()->name),
+             tr("Vous dirigez le futur métro de la ville. Sur la carte, le rouge montre les quartiers où des habitants "
+                "et des emplois attendent un métro : à vous de les desservir."),
+             w(nullptr), {}},
+            {tr("Construisez des stations"),
+             tr("Ouvrez les outils (en bas à gauche) et choisissez Station, ou appuyez sur 2. Cliquez ensuite trois fois "
+                "sur la carte, dans des zones rouges, à environ 500 m les unes des autres. Chaque station dessert les "
+                "rues à 5 minutes à pied."),
+             w(m_toolsBtn), [this, stations] { return m_metro->stations().size() >= stations + 3; }},
+            {tr("Tracez une ligne"),
+             tr("Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l'outil Tracer s'active. Cliquez "
+                "ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre."),
+             w(m_linesBtn), activeLine},
+            {tr("Le métro roule !"),
+             tr("Les points colorés sont vos rames. Autour des stations, la carte vire au vert : la demande y est "
+                "captée. En bas à droite, le bouton des calques montre aussi habitants, emplois et charge des lignes."),
+             w(m_overlayMenuBtn), {}},
+            {tr("Réglez vos trains"),
+             tr("La fiche de la ligne, à gauche, règle la longueur des rames (3 à 5 voitures) et leur nombre. "
+                "Une ligne saturée perd des voyageurs ; une ligne vide coûte pour rien."),
+             lineCardOr(m_linesBtn), {}},
+            {tr("Gérez votre budget"),
+             tr("Les voyageurs rapportent de l'argent chaque mois, les rames et les stations en coûtent. "
+                "Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien."),
+             w(m_displayBtn), {}},
+            {tr("À vous de jouer"),
+             tr("Vous connaissez l'essentiel. D'autres leçons courtes (tracés, exploitation, finances, viaducs…) "
+                "vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !"),
+             w(m_gameMenuBtn), {}},
+        };
+    } else if (id == "tracks") {
+        int via = 0;
+        for (const Line &l : m_metro->lines())
+            via += l.via.size();
+        steps = {needLine,
+                 {tr("Courbez un tracé"),
+                  tr("Avec l'outil Sélection (1), saisissez le milieu d'un tracé et glissez-le : un point de passage "
+                     "apparaît et la ligne se courbe pour éviter un quartier ou suivre une avenue."),
+                  w(m_toolsBtn),
+                  [this, via] {
+                      int n = 0;
+                      for (const Line &l : m_metro->lines())
+                          n += l.via.size();
+                      return n > via;
+                  }},
+                 {tr("Ajustez ou supprimez"),
+                  tr("Glissez la poignée blanche pour déplacer le point de passage ; un clic droit dessus le supprime. "
+                     "Le tunnel ajouté ou retiré est facturé ou remboursé au kilomètre."),
+                  w(nullptr), {}},
+                 selectLine,
+                 {tr("Réordonnez les arrêts"),
+                  tr("Dans la fiche de la ligne, glissez un arrêt dans la liste, ou utilisez les flèches ↑ ↓. "
+                     "Le bouton ⇄ inverse le sens, « Boucle » relie le dernier arrêt au premier."),
+                  lineCardOr(m_linesBtn), {}},
+                 {tr("Prolongez ou raccourcissez"),
+                  tr("Avec l'outil Tracer (3), un clic ajoute une station en bout de ligne, Ctrl+clic en tête, "
+                     "un clic droit retire l'arrêt."),
+                  w(m_toolsBtn), {}},
+                 {tr("Démolir"),
+                  tr("L'outil Démolir (4) supprime une station ou un point de passage : la moitié du coût est remboursée. "
+                     "Ctrl+Z annule n'importe quelle modification et rembourse tout."),
+                  w(m_toolsBtn), {}}};
+    } else if (id == "operation") {
+        QHash<int, int> stock;
+        for (const Line &l : m_metro->lines())
+            stock[l.id] = l.wagons * 100 + l.trains;
+        steps = {needLine, selectLine,
+                 {tr("Longueur et nombre de rames"),
+                  tr("Choisissez 3, 4 ou 5 voitures par rame, et ajoutez ou retirez des rames avec + et −. Plus de "
+                     "rames = attente plus courte et plus de capacité, mais plus de coûts. Modifiez une ligne pour continuer."),
+                  lineCardOr(m_linesBtn),
+                  [this, stock] {
+                      for (const Line &l : m_metro->lines())
+                          if (stock.value(l.id, l.wagons * 100 + l.trains) != l.wagons * 100 + l.trains)
+                              return true;
+                      return false;
+                  }},
+                 {tr("Repérez les lignes saturées"),
+                  tr("Choisissez le calque « charge des lignes » (bouton des calques, en bas à droite) : plus un tronçon "
+                     "est épais et rouge, plus il est plein. Une ligne saturée perd des voyageurs."),
+                  w(m_overlayMenuBtn), [this] { return m_map->overlay() == MapView::Load; }},
+                 {tr("Heures creuses"),
+                  tr("En dehors des heures de pointe, vous pouvez ne garder que 75 % ou 50 % des rames : l'exploitation "
+                     "coûte moins cher, au prix d'un peu moins de voyageurs."),
+                  lineCardOr(m_linesBtn), {}},
+                 {tr("Matériel qui vieillit"),
+                  tr("Après 5 ans, des rames tombent en panne. La fiche indique l'âge et le risque ; « Renouveler » "
+                     "remplace tout le matériel pour 60 % du prix neuf."),
+                  lineCardOr(m_linesBtn), {}}};
+    } else if (id == "finance") {
+        steps = {{tr("Ouvrez les finances"),
+                  tr("Bouton Affichage (en bas à droite) → portefeuille, ou touche B."),
+                  w(m_displayBtn), [this] { return m_financeCard->isVisible(); }},
+                 {tr("Prix du ticket"),
+                  tr("Un ticket plus cher rapporte plus par voyage mais fait fuir des voyageurs ; la recette est "
+                     "maximale vers 1,80 €. Un ticket bon marché augmente la demande captée, et donc le score."),
+                  w(m_financeCard), {}},
+                 {tr("Subvention et emprunts"),
+                  tr("La ville subventionne jusqu'à 40 % de l'exploitation si votre métro capte bien la demande. "
+                     "Les emprunts (4 %/an sur 10 ans) financent un gros chantier ; on peut les rembourser d'un coup."),
+                  w(m_financeCard), {}},
+                 {tr("Entretien"),
+                  tr("Réduit, normal ou renforcé : un entretien renforcé coûte plus cher mais les rames vieillissent "
+                     "moins vite et tombent rarement en panne."),
+                  w(m_financeCard), {}},
+                 {tr("Graphiques"),
+                  tr("Trésorerie, recettes, résultat, fréquentation, population, score… choisissez la période en haut "
+                     "du panneau, et survolez une courbe pour lire les valeurs d'un mois."),
+                  w(m_financeCard), {}}};
+    } else if (id == "routes") {
+        steps = {needLine,
+                 {tr("Créez une correspondance"),
+                  tr("Une station desservie par deux lignes permet de changer de ligne. Sélectionnez une ligne, outil "
+                     "Tracer (3), puis cliquez une station déjà desservie par une autre ligne."),
+                  w(m_toolsBtn),
+                  [this] {
+                      for (const Station &st : m_metro->stations())
+                          if (st.lineCount >= 2)
+                              return true;
+                      return false;
+                  }},
+                 {tr("Calculez un itinéraire"),
+                  tr("Choisissez l'outil Itinéraire (5), puis cliquez un point de départ et un point d'arrivée "
+                     "n'importe où sur la carte."),
+                  w(m_toolsBtn), [this] { return m_routeActive; }},
+                 {tr("Lisez le trajet"),
+                  tr("La fiche indique la marche, l'attente, chaque ligne avec sa direction et les correspondances, "
+                     "et compare au temps à pied. Le trajet se recalcule quand vous modifiez le réseau."),
+                  [this]() -> QWidget * { return m_routeCard; }, {}}};
+    } else if (id == "section") {
+        steps = {needLine, selectLine,
+                 {tr("Ouvrez la vue en coupe"),
+                  tr("Dans la fiche de la ligne, cliquez « Vue en coupe : tunnels et viaducs »."),
+                  [this]() -> QWidget * { return m_profileBtn; }, [this] { return m_profileCard->isVisible(); }},
+                 {tr("Passez un tronçon en viaduc"),
+                  tr("Survolez un tronçon pour voir son coût, puis cliquez-le : il passe en viaduc, environ 45 % moins "
+                     "cher qu'un tunnel."),
+                  [this]() -> QWidget * { return m_profileCard; },
+                  [this] {
+                      for (const Line &l : m_metro->lines())
+                          if (!l.elevated.isEmpty())
+                              return true;
+                      return false;
+                  }},
+                 {tr("Le revers du viaduc"),
+                  tr("Un viaduc est bruyant : les quartiers qu'il traverse se densifient bien moins vite. Sous un "
+                     "fleuve, le tunnel descend plus bas et coûte 60 % de plus ; un pont reste un peu moins cher. "
+                     "Recliquez un tronçon pour le remettre en tunnel."),
+                  [this]() -> QWidget * { return m_profileCard; }, {}}};
+    } else if (id == "display") {
+        steps = {{tr("Les calques"),
+                  tr("Bouton des calques (en bas à droite) : demande captée, densité d'habitants, d'emplois, charge des "
+                     "lignes. Affichez la densité d'habitants pour continuer."),
+                  w(m_overlayMenuBtn), [this] { return m_map->overlay() == MapView::Population; }},
+                 {tr("Le plan schématique"),
+                  tr("Bouton Affichage → plan (ou touche M) : votre réseau redessiné comme un vrai plan de métro. "
+                     "Ouvrez-le pour continuer."),
+                  w(m_displayBtn), [this] { return m_map->schematic(); }},
+                 {tr("Retour à la carte"),
+                  tr("Touche M, ou le même bouton, pour revenir à la carte."),
+                  w(m_displayBtn), [this] { return !m_map->schematic(); }},
+                 {tr("Ambiance"),
+                  tr("Bouton Affichage → lune pour la carte sombre. La journée défile : la nuit, la carte s'assombrit et "
+                     "le métro ferme de 1 h à 5 h (désactivable dans ☰ → Carte)."),
+                  w(m_displayBtn), {}},
+                 {tr("Exporter le plan"),
+                  tr("Ctrl+E (ou ☰ → Carte) enregistre le plan du réseau en PNG ou en PDF, prêt à imprimer."),
+                  w(m_gameMenuBtn), {}}};
+    } else if (id == "game") {
+        steps = {{tr("La vitesse du temps"),
+                  tr("Bouton de vitesse (en bas à droite) : pause, ×1, ×3 ou ×10 ; Espace met en pause. "
+                     "Passez en ×3 ou ×10 pour continuer."),
+                  w(m_timeBtn), [this] { return m_speed >= 3; }},
+                 {tr("Objectifs et score"),
+                  tr("Le panneau trophée liste trois objectifs : chacun rapporte des points et une prime, puis laisse "
+                     "place à un plus difficile. Le meilleur score de chaque ville est gardé."),
+                  [this]() -> QWidget * { return m_goalsCard->isVisible() ? static_cast<QWidget *>(m_goalsCard) : m_displayBtn; }, {}},
+                 {tr("Événements"),
+                  tr("Grèves, pannes, matchs, subventions, nouveaux quartiers… apparaissent à gauche. Ceux qui demandent "
+                     "une décision mettent le jeu en pause jusqu'à votre choix."),
+                  w(nullptr), {}},
+                 {tr("Sauvegardes"),
+                  tr("La partie est sauvegardée automatiquement (réglable dans ☰ → Partie). Ctrl+S enregistre où vous "
+                     "voulez, et un double-clic sur un fichier .metro relance la partie."),
+                  w(m_gameMenuBtn), {}}};
+    } else if (id == "challenges") {
+        steps = {{tr("Scénarios"),
+                  tr("☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et "
+                     "jusqu'à trois étoiles."),
+                  w(m_gameMenuBtn), {}},
+                 {tr("Le vrai métro"),
+                  tr("☰ → Défis → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité "
+                     "et la prolonger."),
+                  w(m_gameMenuBtn), {}},
+                 {tr("Bac à sable et succès"),
+                  tr("Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent "
+                     "au fil de vos parties et sont gardés d'une partie à l'autre."),
+                  w(m_gameMenuBtn), {}}};
+    }
+    return steps;
+}
+
+Card *MainWindow::buildLessonsCard()
+{
+    auto *card = new Card(nullptr, 18);
+    QVBoxLayout *lay = centeredPanel(card, Icons::Play, tr("Tutoriels"), nullptr, [this] { m_lessonsCard->hide(); });
+    auto *intro = new QLabel(tr("Des leçons courtes et indépendantes : suivez seulement celles qui vous intéressent. "
+                                "Chacune se quitte à tout moment."));
+    intro->setWordWrap(true);
+    intro->setProperty("role", "subtitle");
+    lay->addWidget(intro);
+    m_lessonList = new QVBoxLayout;
+    m_lessonList->setSpacing(6);
+    lay->addLayout(m_lessonList);
+    return card;
+}
+
+void MainWindow::showLessons()
+{
+    if (!m_metro->city()) {
+        m_toast->show(tr("Chargez d'abord une ville pour suivre le tutoriel"));
+        return;
+    }
+    clearLayout(m_lessonList);
+    for (const Lesson &l : lessons()) {
+        auto *row = new QWidget;
+        row->setObjectName("lessonRow");
+        row->setAttribute(Qt::WA_StyledBackground, true);
+        row->setStyleSheet("#lessonRow { background: rgba(255,255,255,0.05); border-radius: 12px; }");
+        auto *rl = new QHBoxLayout(row);
+        rl->setContentsMargins(14, 8, 10, 8);
+        rl->setSpacing(12);
+        const bool done = QSettings().value(QStringLiteral("tutorial/%1").arg(l.id), false).toBool()
+                          || (l.id == "basics" && QSettings().value("tutorial/done", false).toBool());
+        auto *col = new QVBoxLayout;
+        col->setSpacing(2);
+        auto *title = new QLabel(QStringLiteral("<b>%1</b>%2").arg(l.title.toHtmlEscaped(),
+                                                                done ? QStringLiteral(" &nbsp;<span style='color:#34C77B'>✔</span>")
+                                                                     : QString()));
+        col->addWidget(title);
+        auto *desc = caption(l.description);
+        desc->setWordWrap(true);
+        col->addWidget(desc);
+        rl->addLayout(col, 1);
+        auto *go = new QPushButton(done ? tr("Revoir") : tr("Commencer"));
+        go->setProperty("variant", done ? "ghost" : "primary");
+        go->setCursor(Qt::PointingHandCursor);
+        const QString id = l.id;
+        connect(go, &QPushButton::clicked, this, [this, id] {
+            m_lessonsCard->hide();
+            startTutorial(id);
+        });
+        rl->addWidget(go, 0, Qt::AlignVCenter);
+        m_lessonList->addWidget(row);
+    }
+    m_scenarioCard->hide();
+    m_achievementsCard->hide();
+    m_lessonsCard->show();
+    m_lessonsCard->raise();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+void MainWindow::startTutorial(const QString &lesson)
+{
+    if (!m_metro->city())
+        return;
+    m_tutLesson = lesson;
+    m_tutSteps = lessonSteps(lesson);
+    m_tutorialStep = -1;
+    showTutorialStep(0);
+}
+
+void MainWindow::endTutorial(bool completed)
+{
+    if (completed) {
+        QSettings().setValue(QStringLiteral("tutorial/%1").arg(m_tutLesson), true);
+        Audio::instance().play(Audio::Coins);
+    }
+    if (m_tutLesson == "basics")
+        QSettings().setValue("tutorial/done", true); // plus proposée automatiquement
+    m_tutorialStep = -1;
+    m_tutSteps.clear();
+    m_tutorialCard->hide();
+    static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
+    layoutOverlays();
+}
+
+// Une étape : texte, élément désigné, condition qui fait passer à la suite (sinon bouton « Suivant »)
+void MainWindow::showTutorialStep(int step)
+{
+    if (step < 0 || step >= m_tutSteps.size()) {
+        endTutorial(step >= m_tutSteps.size());
+        return;
+    }
+    // étape préalable déjà remplie (ex. « il faut une ligne » alors qu'il y en a une) : on passe directement
+    while (step < m_tutSteps.size() && m_tutSteps[step].skipIfDone && m_tutSteps[step].done())
+        ++step;
+    if (step >= m_tutSteps.size()) {
+        endTutorial(true);
         return;
     }
     if (step > 0 && step > m_tutorialStep)
         Audio::instance().play(Audio::Good);
     m_tutorialStep = step;
-    m_tutorialDone = steps[step].done;
-    m_tutStep->setText(tr("Tutoriel · étape %1 sur %2").arg(step + 1).arg(steps.size()).toUpper());
-    m_tutTitle->setText(steps[step].title);
-    m_tutText->setText(steps[step].text);
-    m_tutNext->setVisible(!steps[step].done);
-    m_tutNext->setText(step + 1 == steps.size() ? tr("Terminer") : tr("Suivant"));
-    static_cast<HighlightRing *>(m_tutRing)->target(steps[step].target);
+    const TutStep &s = m_tutSteps[step];
+    m_tutorialDone = s.done;
+    QString lessonTitle;
+    for (const Lesson &l : lessons())
+        if (l.id == m_tutLesson)
+            lessonTitle = l.title;
+    m_tutStep->setText(tr("%1 · étape %2 sur %3").arg(lessonTitle).arg(step + 1).arg(m_tutSteps.size()).toUpper());
+    m_tutTitle->setText(s.title);
+    m_tutText->setText(s.text);
+    m_tutNext->setVisible(!s.done);
+    m_tutNext->setText(step + 1 == m_tutSteps.size() ? tr("Terminer") : tr("Suivant"));
+    m_tutSkip->setText(tr("Quitter la leçon"));
+    static_cast<HighlightRing *>(m_tutRing)->target(s.target ? s.target() : nullptr);
     m_tutorialCard->show();
     layoutOverlays();
     m_layoutTimer.start(0);
@@ -2381,9 +2668,10 @@ void MainWindow::showTutorialStep(int step)
 
 void MainWindow::checkTutorial()
 {
-    if (m_tutorialStep < 0)
+    if (m_tutorialStep < 0 || m_tutorialStep >= m_tutSteps.size())
         return;
-    static_cast<HighlightRing *>(m_tutRing)->follow();
+    const TutStep &s = m_tutSteps[m_tutorialStep];
+    static_cast<HighlightRing *>(m_tutRing)->target(s.target ? s.target() : nullptr); // la cible peut changer
     if (m_tutorialDone && m_tutorialDone())
         showTutorialStep(m_tutorialStep + 1);
 }
@@ -2846,7 +3134,7 @@ void MainWindow::layoutOverlays()
         m_financeCard->move((W - w) / 2, top);
     }
 
-    for (Card *c : {m_scenarioCard, m_achievementsCard})
+    for (Card *c : {m_scenarioCard, m_achievementsCard, m_lessonsCard})
         if (c->isVisible()) {
             const int w = std::min(c == m_scenarioCard ? 760 : 820, W - 2 * kMargin);
             c->setFixedWidth(w);
@@ -2898,7 +3186,7 @@ void MainWindow::layoutOverlays()
                        static_cast<QWidget *>(m_eventsCard), static_cast<QWidget *>(m_newsCard),
                        static_cast<QWidget *>(m_decisionCard), static_cast<QWidget *>(m_scenarioCard),
                        static_cast<QWidget *>(m_achievementsCard), static_cast<QWidget *>(m_missionEndCard),
-                       static_cast<QWidget *>(m_tutorialCard),
+                       static_cast<QWidget *>(m_tutorialCard), static_cast<QWidget *>(m_lessonsCard),
                        static_cast<QWidget *>(m_toast)})
         w->raise();
     if (m_gameMenu && m_gameMenu->isVisible()) { // menu plein écran : par-dessus tous les panneaux
@@ -3013,7 +3301,7 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     // première partie : tutoriel proposé automatiquement (nouvelle partie libre seulement)
     if (!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
         && m_metro->mission().id.isEmpty())
-        QTimer::singleShot(900, this, &MainWindow::startTutorial);
+        QTimer::singleShot(900, this, [this] { startTutorial("basics"); });
 }
 
 void MainWindow::extendMap(int side)
