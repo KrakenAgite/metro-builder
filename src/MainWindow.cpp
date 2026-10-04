@@ -400,11 +400,8 @@ Card *MainWindow::buildCityCard()
     connect(m_resumeHomeBtn, &QPushButton::clicked, this, [this] { showStartPage(2); });
     hl->addWidget(m_resumeHomeBtn);
     auto *tutoBtn = bigButton(Icons::icon(Icons::Info), tr("Tutoriel"), false);
-    tutoBtn->setToolTip(tr("Lance une partie guidée pas à pas sur la ville de votre choix"));
-    connect(tutoBtn, &QPushButton::clicked, this, [this] {
-        m_pendingTutorial = true;
-        showStartPage(1);
-    });
+    tutoBtn->setToolTip(tr("Leçons guidées pas à pas, à suivre sur la ville de votre choix"));
+    connect(tutoBtn, &QPushButton::clicked, this, &MainWindow::showLessons);
     hl->addWidget(tutoBtn);
     auto *moreRow = new QHBoxLayout;
     moreRow->setSpacing(6);
@@ -590,8 +587,6 @@ Card *MainWindow::buildCityCard()
     auto *menu = new QMenu(menuBtn);
     QMenu *game = menu->addMenu(Icons::icon(Icons::Save), tr("Partie"));
     QMenu *mapMenu = menu->addMenu(Icons::icon(Icons::Recenter), tr("Carte"));
-    QMenu *challenges = menu->addMenu(Icons::icon(Icons::Target), tr("Défis"));
-    QMenu *tutoMenu = menu->addMenu(Icons::icon(Icons::Play), tr("Tutoriel"));
     QMenu *settingsMenu = menu->addMenu(Icons::icon(Icons::Sliders), tr("Réglages"));
     QMenu *helpMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Aide"));
     QAction *overpassAct = game->addAction(Icons::icon(Icons::File), tr("Ouvrir un fichier Overpass JSON…"), this, [this] {
@@ -620,11 +615,6 @@ Card *MainWindow::buildCityCard()
                                          QKeySequence("Ctrl+Shift+S"), this, &MainWindow::saveGameAs);
     QAction *loadAct = game->addAction(Icons::icon(Icons::FolderOpen), tr("Charger une partie…"), QKeySequence::Open,
                                        this, &MainWindow::loadGame);
-    m_resumeAction = game->addAction(Icons::icon(Icons::Play), tr("Reprendre la dernière partie"), this, [this] {
-        const QString path = latestAutosave();
-        if (!path.isEmpty())
-            openGame(path);
-    });
     QMenu *autoMenu = game->addMenu(Icons::icon(Icons::Calendar), tr("Sauvegarde automatique"));
     autoMenu->setWindowFlags(autoMenu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     autoMenu->setAttribute(Qt::WA_TranslucentBackground);
@@ -641,14 +631,12 @@ Card *MainWindow::buildCityCard()
                                             QKeySequence("Ctrl+E"), this, &MainWindow::exportPlan);
     QAction *captureAct = mapMenu->addAction(Icons::icon(Icons::Image), tr("Capture de la carte (PNG)…"), this,
                                              &MainWindow::exportMapImage);
-    m_sandboxAction = challenges->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
+    m_sandboxAction = game->addAction(Icons::icon(Icons::Sandbox), tr("Passer cette partie en bac à sable"), this,
                                       &MainWindow::enterSandbox);
-    QAction *importAct = challenges->addAction(Icons::icon(Icons::Download), tr("Importer le métro réel de la ville"),
+    QAction *importAct = game->addAction(Icons::icon(Icons::Download), tr("Importer le métro réel de la ville"),
                                                this, &MainWindow::importRealNetwork);
-    QAction *scenariosAct = challenges->addAction(Icons::icon(Icons::Target), tr("Scénarios…"), this,
-                                                  &MainWindow::showScenarios);
-    QAction *achievementsAct = challenges->addAction(Icons::icon(Icons::Trophy), tr("Succès…"), this,
-                                                     &MainWindow::showAchievements);
+    // l'accueil (nouvelle partie, reprise, tutoriel, scénarios, succès) : seul point d'entrée de ces pages
+    QAction *homeAct = game->addAction(Icons::icon(Icons::Home), tr("Retour à l'accueil"), this, &MainWindow::goHome);
     QAction *fitAct = mapMenu->addAction(Icons::icon(Icons::Recenter), tr("Recadrer la carte"), QKeySequence("F"),
                                          m_map, &MapView::fitCity);
     QAction *nightAct = mapMenu->addAction(Icons::icon(Icons::Moon), tr("Cycle jour / nuit"));
@@ -763,13 +751,6 @@ Card *MainWindow::buildCityCard()
         const QString c = code;
         connect(a, &QAction::triggered, this, [this, c] { setLanguage(c); });
     }
-    // rubrique Tutoriel : une entrée par leçon (✔ une fois terminée)
-    for (const Lesson &l : lessons()) {
-        QAction *a = tutoMenu->addAction(l.title, this, [this, id = l.id] { startTutorial(id); });
-        a->setToolTip(l.description);
-        m_lessonActions.insert(l.id, a);
-    }
-    refreshLessonActions();
     helpMenu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
                         &MainWindow::showHelp);
 
@@ -784,10 +765,9 @@ Card *MainWindow::buildCityCard()
                 m->addSeparator();
         }
     };
-    order(game, {saveAct, saveAsAct, loadAct, m_resumeAction, autoMenu->menuAction(), nullptr, m_undoAction,
-                 m_redoAction, nullptr, overpassAct});
+    order(game, {homeAct, nullptr, saveAct, saveAsAct, loadAct, autoMenu->menuAction(), nullptr, m_undoAction,
+                 m_redoAction, nullptr, importAct, m_sandboxAction, overpassAct});
     order(mapMenu, {fitAct, nightAct, extend->menuAction(), nullptr, exportAct, captureAct});
-    order(challenges, {scenariosAct, achievementsAct, nullptr, importAct, m_sandboxAction});
     // raccourcis actifs même menu fermé (actions des rubriques et de leurs sous-menus)
     std::function<void(QMenu *)> registerShortcuts = [&](QMenu *m) {
         for (QAction *a : m->actions()) {
@@ -2547,7 +2527,7 @@ Card *MainWindow::buildTutorialCard()
 }
 
 // Leçons du tutoriel : « Les bases » est proposée à la première partie, les autres se choisissent
-// dans ☰ → Tutoriel (on n'apprend que ce qui intéresse).
+// dans l'accueil → Tutoriel (on n'apprend que ce qui intéresse).
 const QVector<MainWindow::Lesson> &MainWindow::lessons()
 {
     static const QVector<Lesson> list = {
@@ -2617,7 +2597,7 @@ QVector<MainWindow::TutStep> MainWindow::lessonSteps(const QString &id)
              w(m_displayBtn), {}},
             {tr("À vous de jouer"),
              tr("Vous connaissez l'essentiel. D'autres leçons courtes (tracés, exploitation, finances, viaducs…) "
-                "vous attendent dans ☰ → Tutoriel, quand vous voulez. Bonne construction !"),
+                "vous attendent dans l'accueil → Tutoriel, quand vous voulez. Bonne construction !"),
              w(m_gameMenuBtn), {}},
         };
     } else if (id == "tracks") {
@@ -2777,15 +2757,15 @@ QVector<MainWindow::TutStep> MainWindow::lessonSteps(const QString &id)
                   w(m_gameMenuBtn), {}}};
     } else if (id == "challenges") {
         steps = {{tr("Scénarios"),
-                  tr("☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et "
+                  tr("Accueil → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et "
                      "jusqu'à trois étoiles."),
                   w(m_gameMenuBtn), {}},
                  {tr("Le vrai métro"),
-                  tr("☰ → Défis → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité "
+                  tr("☰ → Partie → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité "
                      "et la prolonger."),
                   w(m_gameMenuBtn), {}},
                  {tr("Bac à sable et succès"),
-                  tr("Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent "
+                  tr("Le bac à sable rend la construction gratuite, sans score. Les succès (accueil → Succès) se débloquent "
                      "au fil de vos parties et sont gardés d'une partie à l'autre."),
                   w(m_gameMenuBtn), {}}};
     }
@@ -2809,10 +2789,6 @@ Card *MainWindow::buildLessonsCard()
 
 void MainWindow::showLessons()
 {
-    if (!m_metro->city()) {
-        m_toast->show(tr("Chargez d'abord une ville pour suivre le tutoriel"));
-        return;
-    }
     clearLayout(m_lessonList);
     for (const Lesson &l : lessons()) {
         auto *row = new QWidget;
@@ -2840,7 +2816,12 @@ void MainWindow::showLessons()
         const QString id = l.id;
         connect(go, &QPushButton::clicked, this, [this, id] {
             m_lessonsCard->hide();
-            startTutorial(id);
+            if (m_metro->city()) {
+                startTutorial(id);
+                return;
+            }
+            m_pendingLesson = id; // depuis l'accueil : choisir une ville, la leçon démarre au chargement
+            showStartPage(1);
         });
         rl->addWidget(go, 0, Qt::AlignVCenter);
         m_lessonList->addWidget(row);
@@ -2875,7 +2856,6 @@ void MainWindow::endTutorial(bool completed)
     m_tutSteps.clear();
     m_tutorialCard->hide();
     static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
-    refreshLessonActions();
     if (completed) { // fin de leçon : terminer, ou enchaîner sur la suivante
         const QVector<Lesson> &all = lessons();
         QString title;
@@ -2892,8 +2872,8 @@ void MainWindow::endTutorial(bool completed)
         for (const Lesson &l : all)
             if (l.id == m_nextLesson)
                 next = l.title;
-        m_tutText->setText(next.isEmpty() ? tr("Vous avez vu toutes les leçons. Elles restent disponibles dans ☰ → Tutoriel.")
-                                          : tr("Leçon suivante : « %1 ». Toutes les leçons sont dans ☰ → Tutoriel.").arg(next));
+        m_tutText->setText(next.isEmpty() ? tr("Vous avez vu toutes les leçons. Elles restent disponibles dans l'accueil → Tutoriel.")
+                                          : tr("Leçon suivante : « %1 ». Toutes les leçons sont dans l'accueil → Tutoriel.").arg(next));
         m_tutSkip->setText(tr("Terminer"));
         m_tutNext->setText(tr("Passer au tutoriel suivant"));
         m_tutNext->setVisible(!next.isEmpty());
@@ -2935,15 +2915,6 @@ void MainWindow::showTutorialStep(int step)
     m_tutorialCard->show();
     layoutOverlays();
     m_layoutTimer.start(0);
-}
-
-void MainWindow::refreshLessonActions()
-{
-    QSettings st;
-    for (auto it = m_lessonActions.begin(); it != m_lessonActions.end(); ++it) {
-        const bool done = st.value(QStringLiteral("tutorial/%1").arg(it.key()), false).toBool();
-        it.value()->setIcon(done ? Icons::icon(Icons::Trophy, QColor("#3DDC97")) : Icons::icon(Icons::Play));
-    }
 }
 
 void MainWindow::checkTutorial()
@@ -3582,10 +3553,13 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     applyPendingView();
     Audio::instance().play(Audio::NewLine);
     // première partie : tutoriel proposé automatiquement (nouvelle partie libre seulement)
-    if (m_pendingTutorial || (!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
+    if (!m_pendingLesson.isEmpty()) {
+        const QString lesson = m_pendingLesson;
+        QTimer::singleShot(900, this, [this, lesson] { startTutorial(lesson); });
+    } else if ((!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
         && m_metro->mission().id.isEmpty()))
         QTimer::singleShot(900, this, [this] { startTutorial("basics"); });
-    m_pendingTutorial = false;
+    m_pendingLesson.clear();
 }
 
 void MainWindow::extendMap(int side)
@@ -4281,7 +4255,6 @@ void MainWindow::autosave()
 void MainWindow::refreshResume()
 {
     m_resumePath = latestAutosave();
-    m_resumeAction->setEnabled(!m_resumePath.isEmpty());
     QFile f(m_resumePath);
     const bool available = !m_resumePath.isEmpty() && f.open(QIODevice::ReadOnly);
     m_resumeHomeBtn->setVisible(available);
@@ -4304,13 +4277,47 @@ void MainWindow::refreshResume()
                                .arg(o.value("week").toInt(1)));
 }
 
+// Retour à l'accueil : la partie est sauvegardée (reprise possible), l'interface de jeu se range
+void MainWindow::goHome()
+{
+    if (!m_metro->city())
+        return;
+    m_gameMenu->close();
+    if (m_tutorialStep >= 0)
+        endTutorial(false);
+    m_tutorialCard->hide();
+    if (!m_metro->sandbox() || !m_metro->stations().isEmpty())
+        autosave();
+    m_speedGroup->button(0)->click();
+    m_cityQuery.clear();
+    m_savePath.clear();
+    m_currentLine = m_selectedStation = -1;
+    m_metro->setCity({});
+    m_map->setCity({});
+    m_map->update();
+    for (Card *c : {m_statsCard, m_dock, m_dockRight, m_lineCard, m_stationCard, m_financeCard, m_goalsCard, m_routeCard,
+                    m_profileCard, m_scenarioCard, m_achievementsCard, m_missionEndCard, m_lessonsCard, m_eventsCard,
+                    m_newsCard, m_decisionCard})
+        c->hide();
+    m_routeActive = false;
+    m_welcome->show();
+    m_loadBtn->setText(tr("Jouer"));
+    m_loadBtn->setToolTip({});
+    refreshResume();
+    showStartPage(0);
+}
+
 void MainWindow::showStartPage(int page)
 {
-    if (page != 1 && m_pendingTutorial && m_startPages->currentIndex() == 1)
-        m_pendingTutorial = false; // retour sans lancer le tutoriel
+    if (page != 1 && !m_pendingLesson.isEmpty() && m_startPages->currentIndex() == 1)
+        m_pendingLesson.clear(); // retour sans lancer le tutoriel
     m_startPages->setCurrentIndex(page);
     m_startSubtitle->setVisible(page == 0);
-    m_tutoNote->setVisible(m_pendingTutorial);
+    m_tutoNote->setVisible(!m_pendingLesson.isEmpty());
+    for (const Lesson &l : lessons())
+        if (l.id == m_pendingLesson)
+            m_tutoNote->setText(tr("Tutoriel : choisissez une ville, la leçon « %1 » démarre dès que la carte est chargée.")
+                                    .arg(l.title));
     m_searchRow->setVisible(page == 1 || m_metro->city());
     if (page == 1) {
         m_cityEdit->setFocus();

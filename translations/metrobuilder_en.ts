@@ -348,10 +348,6 @@
         <translation>Load a game…</translation>
     </message>
     <message>
-        <source>Reprendre la dernière partie</source>
-        <translation>Resume the last game</translation>
-    </message>
-    <message>
         <source>Sauvegarde automatique</source>
         <translation>Autosave</translation>
     </message>
@@ -374,14 +370,6 @@
     <message>
         <source>Importer le métro réel de la ville</source>
         <translation>Import the city&apos;s real metro</translation>
-    </message>
-    <message>
-        <source>Scénarios…</source>
-        <translation>Scenarios…</translation>
-    </message>
-    <message>
-        <source>Succès…</source>
-        <translation>Achievements…</translation>
     </message>
     <message>
         <source>Recadrer la carte</source>
@@ -438,10 +426,6 @@
     <message>
         <source>Langue / Language</source>
         <translation>Langue / Language</translation>
-    </message>
-    <message>
-        <source>Chargez d&apos;abord une ville pour suivre le tutoriel</source>
-        <translation>Load a city first to follow the tutorial</translation>
     </message>
     <message>
         <source>Aide et raccourcis</source>
@@ -2104,24 +2088,12 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>The game is saved automatically (adjustable in ☰ → Game). Ctrl+S saves wherever you like, and double-clicking a .metro file reopens the game.</translation>
     </message>
     <message>
-        <source>☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et jusqu&apos;à trois étoiles.</source>
-        <translation>☰ → Challenges → Scenarios: six missions in great cities, with a budget, a deadline and up to three stars.</translation>
-    </message>
-    <message>
         <source>Le vrai métro</source>
         <translation>The real metro</translation>
     </message>
     <message>
-        <source>☰ → Défis → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité et la prolonger.</source>
-        <translation>☰ → Challenges → Import the real metro: the city&apos;s existing lines, to start from reality and extend it.</translation>
-    </message>
-    <message>
         <source>Bac à sable et succès</source>
         <translation>Sandbox and achievements</translation>
-    </message>
-    <message>
-        <source>Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent au fil de vos parties et sont gardés d&apos;une partie à l&apos;autre.</source>
-        <translation>Sandbox makes construction free, with no score. Achievements (☰ → Challenges) unlock as you play and are kept from one game to the next.</translation>
     </message>
     <message>
         <source>Tutoriels</source>
@@ -2260,10 +2232,6 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Tutorial</translation>
     </message>
     <message>
-        <source>Lance une partie guidée pas à pas sur la ville de votre choix</source>
-        <translation>Starts a step-by-step guided game in the city of your choice</translation>
-    </message>
-    <message>
         <source>Options</source>
         <translation>Options</translation>
     </message>
@@ -2288,10 +2256,6 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Resume this game</translation>
     </message>
     <message>
-        <source>Vous connaissez l&apos;essentiel. D&apos;autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Tutoriel, quand vous voulez. Bonne construction !</source>
-        <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in ☰ → Tutorial whenever you like. Happy building!</translation>
-    </message>
-    <message>
         <source>Leçon terminée</source>
         <translation>Lesson complete</translation>
     </message>
@@ -2300,16 +2264,44 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>“%1”: well done!</translation>
     </message>
     <message>
-        <source>Vous avez vu toutes les leçons. Elles restent disponibles dans ☰ → Tutoriel.</source>
-        <translation>You have seen every lesson. They remain available in ☰ → Tutorial.</translation>
-    </message>
-    <message>
-        <source>Leçon suivante : « %1 ». Toutes les leçons sont dans ☰ → Tutoriel.</source>
-        <translation>Next lesson: “%1”. All lessons are in ☰ → Tutorial.</translation>
-    </message>
-    <message>
         <source>Passer au tutoriel suivant</source>
         <translation>Go to the next tutorial</translation>
+    </message>
+    <message>
+        <source>Leçons guidées pas à pas, à suivre sur la ville de votre choix</source>
+        <translation>Step-by-step guided lessons, in the city of your choice</translation>
+    </message>
+    <message>
+        <source>Retour à l&apos;accueil</source>
+        <translation>Back to home screen</translation>
+    </message>
+    <message>
+        <source>Vous connaissez l&apos;essentiel. D&apos;autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans l&apos;accueil → Tutoriel, quand vous voulez. Bonne construction !</source>
+        <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in Home → Tutorial whenever you like. Happy building!</translation>
+    </message>
+    <message>
+        <source>Accueil → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et jusqu&apos;à trois étoiles.</source>
+        <translation>Home → Scenarios: six missions in major cities, with a budget, a deadline and up to three stars.</translation>
+    </message>
+    <message>
+        <source>☰ → Partie → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité et la prolonger.</source>
+        <translation>☰ → Game → Import the real metro: the city's existing lines, to start from reality and extend it.</translation>
+    </message>
+    <message>
+        <source>Le bac à sable rend la construction gratuite, sans score. Les succès (accueil → Succès) se débloquent au fil de vos parties et sont gardés d&apos;une partie à l&apos;autre.</source>
+        <translation>Sandbox makes building free, with no score. Achievements (Home → Achievements) unlock as you play and carry over between games.</translation>
+    </message>
+    <message>
+        <source>Vous avez vu toutes les leçons. Elles restent disponibles dans l&apos;accueil → Tutoriel.</source>
+        <translation>You have seen every lesson. They remain available in Home → Tutorial.</translation>
+    </message>
+    <message>
+        <source>Leçon suivante : « %1 ». Toutes les leçons sont dans l&apos;accueil → Tutoriel.</source>
+        <translation>Next lesson: “%1”. All lessons are in Home → Tutorial.</translation>
+    </message>
+    <message>
+        <source>Tutoriel : choisissez une ville, la leçon « %1 » démarre dès que la carte est chargée.</source>
+        <translation>Tutorial: choose a city, the “%1” lesson starts as soon as the map is loaded.</translation>
     </message>
 </context>
 <context>

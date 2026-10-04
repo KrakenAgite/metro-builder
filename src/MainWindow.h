@@ -226,8 +226,6 @@ private:
     int m_tutorialStep = -1;
     QString m_tutLesson;
     QString m_nextLesson;
-    QHash<QString, QAction *> m_lessonActions;
-    void refreshLessonActions();
     QVector<TutStep> m_tutSteps;
     Card *m_lessonsCard;
     QVBoxLayout *m_lessonList;
@@ -260,7 +258,8 @@ private:
     QLabel *m_startSubtitle = nullptr, *m_tutoNote = nullptr;
     QPushButton *m_resumeHomeBtn = nullptr;
     QWidget *m_searchRow = nullptr;
-    bool m_pendingTutorial = false; // tutoriel demandé depuis l'accueil
+    QString m_pendingLesson; // leçon choisie depuis l'accueil, lancée une fois la ville chargée
+    void goHome();
     void showStartPage(int page);
 
     // défis : scénarios, succès, réseau réel
@@ -322,5 +321,4 @@ private:
     QWidget *m_resumeBox;
     QLabel *m_resumeLabel;
     QString m_resumePath;
-    QAction *m_resumeAction;
 };

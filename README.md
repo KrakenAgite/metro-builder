@@ -68,6 +68,8 @@ L'interface est une carte plein écran avec des panneaux flottants :
    rouvrir), **Tutoriel** (une partie guidée par la leçon « Les bases »), **Scénarios**, **Succès** et **Options**.
    « Nouvelle partie » ouvre les réglages : mode (Carrière / Bac à sable), durée à tenir, colère de la ville, puis
    la ville (« Lyon », « Bordeaux », « Paris 11e »…) et le rayon ; **Jouer** lance la partie.
+   Une règle simple : l'**accueil** lance (partie, reprise, tutoriel, scénarios, succès) ; le menu **☰** gère la
+   partie en cours (sauvegardes, carte, réglages, aide) et propose **Retour à l'accueil** (partie sauvegardée).
    Le géocodage passe par Nominatim ; rues, bâtiments, eau et parcs viennent des tuiles vectorielles
    OpenStreetMap d'[OpenFreeMap](https://openfreemap.org) (format Mapbox Vector Tile, servi par un CDN :
    ~1 s pour 3 km de rayon). En secours, l'API Overpass est interrogée par zones en parallèle.
@@ -137,7 +139,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
     bilan démographique chaque année et courbe de population dans les Finances.
 
 **Défis**
-- **Scénarios** (écran d'accueil ou ☰ → Scénarios) : six missions sur de grandes villes — Paris (avec le vrai
+- **Scénarios** (écran d'accueil) : six missions sur de grandes villes — Paris (avec le vrai
   métro au départ), Londres, Berlin, Madrid, Manhattan et Shinjuku. Chacune fixe un budget, une échéance et des
   conditions de victoire (voyageurs transportés, habitants desservis, demande captée, correspondances, mois
   bénéficiaires, aucune ligne saturée…). Les objectifs de voyageurs sont proportionnels à la demande de la ville.
@@ -163,7 +165,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
   (tablier et piliers).
 
 **Confort**
-- **Tutoriels** : des leçons courtes et indépendantes, à choisir dans la rubrique ☰ → Tutoriel (✔ vert une fois faites ; en fin de leçon, « Terminer » ou « Passer au tutoriel suivant ») :
+- **Tutoriels** : des leçons courtes et indépendantes, à choisir depuis l'accueil → Tutoriel (✔ vert une fois faites ; la leçon démarre sur la ville choisie ; en fin de leçon, « Terminer » ou « Passer au tutoriel suivant ») :
   *Les bases* (proposée automatiquement à la première partie), *Tracés et arrêts*, *Exploitation des lignes*,
   *Finances et politique*, *Correspondances et itinéraires*, *Tunnels et viaducs*, *Carte et affichage*,
   *Temps, événements et objectifs*, *Défis*. On ne suit que celles qui intéressent ; une coche marque les leçons
@@ -186,10 +188,9 @@ L'interface est une carte plein écran avec des panneaux flottants :
   sont redessinées à chaque image ; les rames disparaissent quand on dézoome fortement ; la musique utilise un
   sinus tabulé et ne calcule rien quand elle est coupée.
 
-**Menu** (bouton ☰) : un écran plein écran sur le fond de l'accueil, avec cinq rubriques — **Partie**
-(sauvegardes, sauvegarde automatique, annuler / rétablir, fichier Overpass), **Carte** (recadrer, jour / nuit,
-agrandir, export du plan, capture), **Défis** (scénarios, succès, tutoriel, métro réel, bac à sable),
-**Réglages** (son, performances, langue) et **Aide**. Le jeu est en pause tant que le menu est ouvert ;
+**Menu** (bouton ☰) : un écran plein écran sur le fond de l'accueil, avec quatre rubriques — **Partie**
+(retour à l'accueil, sauvegardes, sauvegarde automatique, annuler / rétablir, métro réel, bac à sable, fichier
+Overpass), **Carte** (recadrer, jour / nuit, agrandir, export du plan, capture), **Réglages** (son, performances, langue) et **Aide**. Le jeu est en pause tant que le menu est ouvert ;
 Échap ou « Reprendre » le referme. Tous les raccourcis clavier restent actifs.
 
 **Calendrier** : le temps avance par semaines (« Semaine 2 — mars, année 1 ») ; une semaine dure 10 s à
