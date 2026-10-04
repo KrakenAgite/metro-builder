@@ -883,10 +883,18 @@ QWidget *flyout(QToolButton *anchor, QMenu **menuOut = nullptr)
     action->setDefaultWidget(content);
     menu->addAction(action);
     // le volet s'ouvre juste au-dessus de son bouton, centré sur lui
-    QObject::connect(anchor, &QToolButton::clicked, menu, [anchor, menu] {
+    QObject::connect(anchor, &QToolButton::clicked, menu, [anchor, menu, action, content] {
+        // le contenu a pu changer (lignes ajoutées, fenêtre redimensionnée) : QMenu garde la taille en cache
+        content->adjustSize();
+        action->setText(QStringLiteral(" "));
+        action->setText({});
         menu->adjustSize();
         const QSize sz = menu->sizeHint();
-        menu->popup(anchor->mapToGlobal(QPoint((anchor->width() - sz.width()) / 2, -sz.height() - 6)));
+        QPoint pos = anchor->mapToGlobal(QPoint((anchor->width() - sz.width()) / 2, -sz.height() - 6));
+        const QRect win = anchor->window()->geometry(); // reste dans la fenêtre, quelle que soit sa taille
+        pos.setX(std::clamp(pos.x(), win.left() + 8, std::max(win.left() + 8, win.right() - sz.width() - 8)));
+        pos.setY(std::max(pos.y(), win.top() + 8));
+        menu->popup(pos);
     });
     anchor->setProperty("flyout", QVariant::fromValue(static_cast<QObject *>(menu)));
     if (menuOut)
@@ -3468,6 +3476,7 @@ void MainWindow::layoutOverlays()
     }
     if (m_tutRing && m_tutorialStep >= 0) // l'anneau du tutoriel au-dessus de tout
         static_cast<HighlightRing *>(m_tutRing)->follow();
+    layoutLineBadges(); // la hauteur disponible pour le volet des lignes suit la fenêtre
 }
 
 // ---------------------------------------------------------------------------
@@ -3769,11 +3778,39 @@ void MainWindow::refreshStats()
     m_coverChip->setSub(tr("habitants desservis"));
 }
 
+// Pastilles du volet des lignes : autant de rangées que la hauteur disponible au-dessus du bouton
+// le permet, puis des colonnes équilibrées ; le volet grandit avec le nombre de lignes
+void MainWindow::layoutLineBadges()
+{
+    if (m_badgeCount == 0 || !m_linesBtn)
+        return;
+    constexpr int Pitch = 44; // pastille de 40 px + 4 px d'écart
+    const int above = m_linesBtn->mapTo(m_root, QPoint()).y();
+    int addH = 0;
+    for (auto *b : m_linesMenu->findChildren<QPushButton *>())
+        addH += b->sizeHint().height() + 4;
+    const int avail = above - 6 - 12 - 16 - 8 - addH; // écart, marge de fenêtre, marges du volet, espacement
+    const int maxRows = std::clamp((avail + 4) / Pitch, 1, 12);
+    const int cols = (m_badgeCount + maxRows - 1) / maxRows;
+    const int perColumn = (m_badgeCount + cols - 1) / cols; // colonnes équilibrées
+    if (perColumn == m_badgePerColumn)
+        return;
+    m_badgePerColumn = perColumn;
+    QList<QWidget *> badges;
+    for (int k = 0; k < m_badgeLayout->count(); ++k)
+        badges << m_badgeLayout->itemAt(k)->widget();
+    for (QWidget *b : badges)
+        m_badgeLayout->removeWidget(b);
+    for (int k = 0; k < badges.size(); ++k)
+        m_badgeLayout->addWidget(badges[k], k % perColumn, k / perColumn);
+    m_badgeBox->adjustSize();
+}
+
 void MainWindow::refreshLines()
 {
     clearLayout(m_badgeLayout);
-    // volet vertical : une colonne de pastilles, une colonne de plus toutes les 10 lignes
-    const int perColumn = 10;
+    m_badgeCount = 0;
+    m_badgePerColumn = 0;
     int i = 0;
     for (const Line &l : m_metro->lines()) {
         // pas d'alerte « saturée » pour une ligne à l'arrêt (grève) : elle n'a simplement plus de capacité
@@ -3789,10 +3826,12 @@ void MainWindow::refreshLines()
             m_linesMenu->close();
             selectLine(id == m_currentLine ? -1 : id);
         });
-        m_badgeLayout->addWidget(b, i % perColumn, i / perColumn);
+        m_badgeLayout->addWidget(b, i, 0);
         ++i;
     }
+    m_badgeCount = i;
     m_badgeBox->setVisible(i > 0);
+    layoutLineBadges();
     if (auto *addNumber = m_linesMenu->findChild<QPushButton *>("addNumber"))
         addNumber->setText(tr("Nouvelle ligne %1").arg(m_metro->nextFreeCode(false)));
     if (auto *addLetter = m_linesMenu->findChild<QPushButton *>("addLetter")) {

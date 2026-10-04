@@ -172,6 +172,8 @@ private:
     QToolButton *m_financeBtn;
     QToolButton *m_soundBtn;
     QWidget *m_badgeBox;
+    int m_badgeCount = 0, m_badgePerColumn = 0;
+    void layoutLineBadges();
     Card *m_dockRight;             // calques, temps, affichage (en bas à droite)
     QToolButton *m_toolsBtn, *m_linesBtn, *m_overlayMenuBtn, *m_timeBtn, *m_displayBtn; // un bouton par groupe
     QMenu *m_linesMenu;
