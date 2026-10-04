@@ -29,6 +29,7 @@ const char *kStyle = R"(
         text-align: left; padding: 0; border: none; border-radius: 10px; background: rgba(255,255,255,0.05);
         min-height: 40px;
     }
+    #menuPanel QPushButton#item[twoLines="true"] { min-height: 54px; }
     #menuPanel QPushButton#item:hover { background: rgba(255,255,255,0.10); }
     #menuPanel QPushButton#item:disabled { background: rgba(255,255,255,0.02); }
     #menuPanel QPushButton#item:checked { background: rgba(76,141,255,0.16); }
@@ -219,24 +220,31 @@ QWidget *GameMenu::actionRow(QAction *a)
     icon->setFixedWidth(20);
     auto *text = new QLabel(clean(a->text()));
     text->setObjectName("itemText");
+    // description (infobulle de l'action) sous le libellé, en entier ; raccourci clavier à droite
+    auto *desc = new QLabel;
+    desc->setObjectName("itemHint");
     auto *hint = new QLabel(a->shortcut().toString(QKeySequence::NativeText));
     hint->setObjectName("itemHint");
-    for (QLabel *l : {icon, text, hint}) {
+    auto *col = new QVBoxLayout;
+    col->setSpacing(1);
+    col->addWidget(text);
+    col->addWidget(desc);
+    for (QLabel *l : {icon, text, desc, hint})
         l->setAttribute(Qt::WA_TransparentForMouseEvents);
-        rl->addWidget(l);
-    }
-    rl->insertStretch(2, 1);
-    b->setEnabled(a->isEnabled());
-    connect(a, &QAction::changed, b, [a, b, icon, text, hint] {
+    rl->addWidget(icon);
+    rl->addLayout(col, 1);
+    rl->addWidget(hint);
+    auto update = [a, b, icon, text, desc] {
         b->setEnabled(a->isEnabled());
         icon->setPixmap(a->icon().pixmap(18, 18));
         text->setText(clean(a->text()));
-        hint->setText(a->toolTip() != clean(a->text()) && !a->toolTip().isEmpty() && a->shortcut().isEmpty()
-                          ? a->toolTip()
-                          : a->shortcut().toString(QKeySequence::NativeText));
-    });
-    if (a->shortcut().isEmpty() && !a->toolTip().isEmpty() && a->toolTip() != clean(a->text()))
-        hint->setText(a->toolTip());
+        const bool hasDesc = !a->toolTip().isEmpty() && a->toolTip() != clean(a->text());
+        desc->setText(hasDesc ? a->toolTip() : QString());
+        desc->setVisible(hasDesc);
+        b->setProperty("twoLines", hasDesc); // deux lignes : libellé et description (feuille de style)
+    };
+    update();
+    connect(a, &QAction::changed, b, update);
     connect(b, &QPushButton::clicked, this, [this, a] {
         close();
         a->trigger();
