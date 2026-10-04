@@ -64,7 +64,10 @@ L'interface est une carte plein écran avec des panneaux flottants :
 | Bas gauche | Éditeur de la ligne sélectionnée (arrêts façon plan de ligne, voitures, rames, boucle, indicateurs) |
 | Droite | Fiche de la station sélectionnée |
 
-1. Tapez une ville (« Lyon », « Bordeaux », « Paris 11e »…), choisissez le rayon puis **Charger**.
+1. L'accueil propose **Nouvelle partie**, **Reprendre** (affiche la dernière sauvegarde automatique avant de la
+   rouvrir), **Tutoriel** (une partie guidée par la leçon « Les bases »), **Scénarios**, **Succès** et **Options**.
+   « Nouvelle partie » ouvre les réglages : mode (Carrière / Bac à sable), durée à tenir, colère de la ville, puis
+   la ville (« Lyon », « Bordeaux », « Paris 11e »…) et le rayon ; **Jouer** lance la partie.
    Le géocodage passe par Nominatim ; rues, bâtiments, eau et parcs viennent des tuiles vectorielles
    OpenStreetMap d'[OpenFreeMap](https://openfreemap.org) (format Mapbox Vector Tile, servi par un CDN :
    ~1 s pour 3 km de rayon). En secours, l'API Overpass est interrogée par zones en parallèle.
@@ -112,7 +115,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
     quand le réseau change ; clic droit pour l'effacer.
 11. **Annuler / rétablir** (**Ctrl+Z** / **Ctrl+Y**, ou ☰) : toute modification du réseau (stations, lignes,
     arrêts, rames, tracés, noms, couleurs) ; la construction annulée est intégralement remboursée.
-12. **Bac à sable** : à choisir sur l'écran d'accueil (« Carrière » / « Bac à sable ») ou ☰ pour la partie en
+12. **Bac à sable** : à choisir dans Nouvelle partie (« Carrière » / « Bac à sable ») ou ☰ pour la partie en
     cours (sans retour) : construction gratuite, ni événements ni score ; le mode est enregistré dans la sauvegarde.
     **But de la partie (Carrière)** : sous « Carrière », choisissez de **tenir 5, 10 ou 20 ans** (ou une partie sans fin).
     On perd par **faillite** : 6 mois d'affilée avec une trésorerie négative. L'option **Colère de la ville** ajoute

@@ -17,6 +17,7 @@
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCheckBox>
+#include <QStackedWidget>
 #include <QComboBox>
 #include <QEvent>
 #include <QFile>
@@ -307,6 +308,7 @@ MainWindow::MainWindow(QWidget *parent)
     if (m_autosaveMinutes > 0)
         m_autosaveTimer.start(m_autosaveMinutes * 60000);
     refreshResume();
+    showStartPage(0);
 
     m_clock.start();
     m_timer.setInterval(m_frameInterval);
@@ -350,7 +352,7 @@ Card *MainWindow::buildCityCard()
     auto *lay = new QVBoxLayout(card);
     lay->setSpacing(12);
 
-    // En-tête d'accueil (masqué une fois la ville chargée)
+    // Accueil (masqué une fois la ville chargée) : page principale, nouvelle partie, reprise
     m_welcome = new QWidget;
     auto *wl = new QHBoxLayout(m_welcome);
     wl->setContentsMargins(14, 14, 14, 0);
@@ -362,16 +364,77 @@ Card *MainWindow::buildCityCard()
     wt->setSpacing(2);
     auto *title = new QLabel(tr("Metro Builder"));
     title->setProperty("role", "title");
-    auto *subtitle = new QLabel(tr("Dessinez le métro d'une vraie ville à partir d'OpenStreetMap : "
-                                   "placez les stations, tracez les lignes et répondez à la demande."));
-    subtitle->setProperty("role", "subtitle");
-    subtitle->setWordWrap(true);
+    m_startSubtitle = new QLabel(tr("Dessinez le métro d'une vraie ville."));
+    m_startSubtitle->setProperty("role", "subtitle");
+    m_startSubtitle->setWordWrap(true);
     wt->addWidget(title);
-    wt->addWidget(subtitle);
-    // mode des nouvelles parties
+    wt->addWidget(m_startSubtitle);
+    m_startPages = new QStackedWidget;
+    wt->addSpacing(10);
+    wt->addWidget(m_startPages);
+    wl->addLayout(wt, 1);
+    auto bigButton = [](const QIcon &icon, const QString &text, bool primary) {
+        auto *b = new QPushButton(icon, text);
+        b->setProperty("variant", primary ? "primary" : "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(38);
+        return b;
+    };
+    auto backButton = [this](const QString &text) {
+        auto *b = new QPushButton(Icons::icon(Icons::ChevronLeft), text);
+        b->setProperty("variant", "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        connect(b, &QPushButton::clicked, this, [this] { showStartPage(0); });
+        return b;
+    };
+
+    // page 0 : accueil
+    auto *home = new QWidget;
+    auto *hl = new QVBoxLayout(home);
+    hl->setContentsMargins(0, 0, 0, 6);
+    hl->setSpacing(6);
+    auto *newBtn = bigButton(Icons::icon(Icons::Plus, Qt::white, Qt::white), tr("Nouvelle partie"), true);
+    connect(newBtn, &QPushButton::clicked, this, [this] { showStartPage(1); });
+    hl->addWidget(newBtn);
+    m_resumeHomeBtn = bigButton(Icons::icon(Icons::Play), tr("Reprendre"), false);
+    connect(m_resumeHomeBtn, &QPushButton::clicked, this, [this] { showStartPage(2); });
+    hl->addWidget(m_resumeHomeBtn);
+    auto *tutoBtn = bigButton(Icons::icon(Icons::Info), tr("Tutoriel"), false);
+    tutoBtn->setToolTip(tr("Lance une partie guidée pas à pas sur la ville de votre choix"));
+    connect(tutoBtn, &QPushButton::clicked, this, [this] {
+        m_pendingTutorial = true;
+        showStartPage(1);
+    });
+    hl->addWidget(tutoBtn);
+    auto *moreRow = new QHBoxLayout;
+    moreRow->setSpacing(6);
+    auto *scenBtn = bigButton(Icons::icon(Icons::Target), tr("Scénarios"), false);
+    connect(scenBtn, &QPushButton::clicked, this, &MainWindow::showScenarios);
+    auto *achBtn = bigButton(Icons::icon(Icons::Trophy), tr("Succès"), false);
+    connect(achBtn, &QPushButton::clicked, this, &MainWindow::showAchievements);
+    auto *setBtn = bigButton(Icons::icon(Icons::Sliders), tr("Options"), false);
+    connect(setBtn, &QPushButton::clicked, this, [this] { m_gameMenuBtn->click(); });
+    for (QPushButton *b : {scenBtn, achBtn, setBtn})
+        moreRow->addWidget(b, 1);
+    hl->addLayout(moreRow);
+    m_startPages->addWidget(home);
+
+    // page 1 : paramètres de la nouvelle partie (la ville se choisit dans la barre en dessous)
+    auto *setup = new QWidget;
+    auto *su = new QVBoxLayout(setup);
+    su->setContentsMargins(0, 0, 0, 0);
+    su->setSpacing(8);
+    su->addWidget(backButton(tr("Nouvelle partie")), 0, Qt::AlignLeft);
+    m_tutoNote = new QLabel(tr("Tutoriel : choisissez une ville, la leçon « Les bases » démarre dès que la carte est chargée."));
+    m_tutoNote->setProperty("role", "status");
+    m_tutoNote->setWordWrap(true);
+    su->addWidget(m_tutoNote);
     auto *modeRow = new QHBoxLayout;
-    modeRow->setContentsMargins(0, 8, 0, 0);
     modeRow->setSpacing(4);
+    auto *modeLabel = new QLabel(tr("Mode :"));
+    modeLabel->setProperty("role", "caption");
+    modeLabel->setMinimumWidth(50);
+    modeRow->addWidget(modeLabel);
     auto *modeGroup = new QButtonGroup(this);
     m_modeCareer = new QToolButton;
     m_modeCareer->setText(tr("Carrière"));
@@ -395,31 +458,20 @@ Card *MainWindow::buildCityCard()
         layoutOverlays();
     });
     modeRow->addStretch();
-    auto *scenBtn = new QPushButton(Icons::icon(Icons::Target), tr("Scénarios"));
-    scenBtn->setProperty("variant", "ghost");
-    scenBtn->setCursor(Qt::PointingHandCursor);
-    scenBtn->setToolTip(tr("Missions sur de grandes capitales"));
-    connect(scenBtn, &QPushButton::clicked, this, &MainWindow::showScenarios);
-    modeRow->addWidget(scenBtn);
-    auto *achBtn = new QPushButton(Icons::icon(Icons::Trophy), tr("Succès"));
-    achBtn->setProperty("variant", "ghost");
-    achBtn->setCursor(Qt::PointingHandCursor);
-    connect(achBtn, &QPushButton::clicked, this, &MainWindow::showAchievements);
-    modeRow->addWidget(achBtn);
-    wt->addLayout(modeRow);
+    su->addLayout(modeRow);
     // but de la partie carrière : tenir N années sans faillite (et, en option, sans fâcher la ville)
     m_survivalOptions = new QWidget;
     auto *svl = new QHBoxLayout(m_survivalOptions);
-    svl->setContentsMargins(0, 4, 0, 0);
+    svl->setContentsMargins(0, 0, 0, 0);
     svl->setSpacing(4);
     auto *goalLabel = new QLabel(tr("Tenir :"));
     goalLabel->setProperty("role", "caption");
+    goalLabel->setMinimumWidth(50);
     svl->addWidget(goalLabel);
     m_newSurvivalYears = QSettings().value("game/survivalYears", 10).toInt();
     m_newAnger = QSettings().value("game/anger", false).toBool();
     auto *yearsGroup = new QButtonGroup(this);
-    const QList<QPair<int, QString>> durations = {
-        {5, tr("5 ans")}, {10, tr("10 ans")}, {20, tr("20 ans")}, {0, tr("Sans fin")}};
+    const QList<QPair<int, QString>> durations = {{5, tr("5 ans")}, {10, tr("10 ans")}, {20, tr("20 ans")}, {0, tr("Sans fin")}};
     for (const auto &[y, text] : durations) {
         auto *b = new QToolButton;
         b->setText(text);
@@ -438,6 +490,10 @@ Card *MainWindow::buildCityCard()
             QSettings().setValue("game/survivalYears", y);
         });
     }
+    svl->addStretch();
+    auto *svBox = new QVBoxLayout;
+    svBox->setSpacing(6);
+    svBox->setContentsMargins(0, 0, 0, 0);
     auto *anger = new QCheckBox(tr("Colère de la ville"));
     anger->setChecked(m_newAnger);
     anger->setCursor(Qt::PointingHandCursor);
@@ -447,12 +503,54 @@ Card *MainWindow::buildCityCard()
         m_newAnger = on;
         QSettings().setValue("game/anger", on);
     });
-    svl->addSpacing(8);
-    svl->addWidget(anger);
-    svl->addStretch();
+    auto *svWrap = new QWidget;
+    auto *svw = new QVBoxLayout(svWrap);
+    svw->setContentsMargins(0, 0, 0, 0);
+    svw->setSpacing(6);
+    svw->addWidget(m_survivalOptions);
+    auto *angerRow = new QHBoxLayout;
+    angerRow->addSpacing(54);
+    angerRow->addWidget(anger);
+    angerRow->addStretch();
+    svw->addLayout(angerRow);
+    m_survivalOptions = svWrap; // le but et l'option de colère se masquent ensemble en bac à sable
     m_survivalOptions->setVisible(!m_newSandbox);
-    wt->addWidget(m_survivalOptions);
-    wl->addLayout(wt, 1);
+    su->addWidget(m_survivalOptions);
+    auto *cityLabel = new QLabel(tr("Ville et taille de la zone :"));
+    cityLabel->setProperty("role", "caption");
+    su->addWidget(cityLabel);
+    m_startPages->addWidget(setup);
+
+    // page 2 : reprise de la dernière partie (sauvegarde automatique)
+    auto *resume = new QWidget;
+    auto *rs = new QVBoxLayout(resume);
+    rs->setContentsMargins(0, 0, 0, 6);
+    rs->setSpacing(8);
+    rs->addWidget(backButton(tr("Reprendre")), 0, Qt::AlignLeft);
+    m_resumeBox = new QWidget;
+    m_resumeBox->setObjectName("resumeBox");
+    m_resumeBox->setAttribute(Qt::WA_StyledBackground, true);
+    m_resumeBox->setStyleSheet("#resumeBox { background: rgba(255,255,255,0.05); border-radius: 10px; }");
+    auto *rl = new QHBoxLayout(m_resumeBox);
+    rl->setContentsMargins(10, 8, 10, 8);
+    auto *rIcon = new QLabel;
+    rIcon->setPixmap(Icons::pixmap(Icons::Save, 18, Theme::TextDim));
+    rl->addWidget(rIcon, 0, Qt::AlignTop);
+    m_resumeLabel = new QLabel;
+    m_resumeLabel->setProperty("role", "status");
+    m_resumeLabel->setWordWrap(true);
+    rl->addWidget(m_resumeLabel, 1);
+    rs->addWidget(m_resumeBox);
+    auto *resRow = new QHBoxLayout;
+    resRow->setSpacing(6);
+    auto *otherBtn = bigButton(Icons::icon(Icons::FolderOpen), tr("Autre sauvegarde…"), false);
+    connect(otherBtn, &QPushButton::clicked, this, &MainWindow::loadGame);
+    auto *resumeBtn = bigButton(Icons::icon(Icons::Play, Qt::white, Qt::white), tr("Reprendre cette partie"), true);
+    connect(resumeBtn, &QPushButton::clicked, this, [this] { openGame(m_resumePath); });
+    resRow->addWidget(otherBtn);
+    resRow->addWidget(resumeBtn, 1);
+    rs->addLayout(resRow);
+    m_startPages->addWidget(resume);
     lay->addWidget(m_welcome);
 
     // Barre de recherche
@@ -478,7 +576,7 @@ Card *MainWindow::buildCityCard()
     m_radiusCombo->setCurrentIndex(2);
     m_radiusCombo->setToolTip(tr("Demi-côté de la zone de jeu (au-delà de 4 km la carte devient plus lourde à afficher)"));
     sl->addWidget(m_radiusCombo);
-    m_loadBtn = new QPushButton(Icons::icon(Icons::Download, Qt::white, Qt::white), tr("Charger"));
+    m_loadBtn = new QPushButton(Icons::icon(Icons::Download, Qt::white, Qt::white), tr("Jouer"));
     m_loadBtn->setProperty("variant", "primary");
     m_loadBtn->setCursor(Qt::PointingHandCursor);
     sl->addWidget(m_loadBtn);
@@ -716,31 +814,14 @@ Card *MainWindow::buildCityCard()
                                          : tr("Menu"));
     });
 
-    auto *row = new QHBoxLayout;
+    m_searchRow = new QWidget;
+    auto *row = new QHBoxLayout(m_searchRow);
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(6);
     row->addWidget(search, 1);
     row->addWidget(menuBtn);
-    lay->addLayout(row);
+    lay->addWidget(m_searchRow);
 
-    // Reprise de la dernière partie (sauvegarde automatique)
-    m_resumeBox = new QWidget;
-    auto *rl = new QHBoxLayout(m_resumeBox);
-    rl->setContentsMargins(6, 0, 4, 0);
-    auto *rIcon = new QLabel;
-    rIcon->setPixmap(Icons::pixmap(Icons::Save, 18, Theme::TextDim));
-    rl->addWidget(rIcon);
-    m_resumeLabel = new QLabel;
-    m_resumeLabel->setProperty("role", "status");
-    m_resumeLabel->setWordWrap(true);
-    rl->addWidget(m_resumeLabel, 1);
-    auto *resumeBtn = new QPushButton(Icons::icon(Icons::Play, Qt::white, Qt::white), tr("Reprendre"));
-    resumeBtn->setProperty("variant", "primary");
-    resumeBtn->setCursor(Qt::PointingHandCursor);
-    connect(resumeBtn, &QPushButton::clicked, this, [this] { openGame(m_resumePath); });
-    rl->addWidget(resumeBtn);
-    m_resumeBox->hide();
-    lay->addWidget(m_resumeBox);
 
     // Progression du chargement
     m_busy = new QProgressBar;
@@ -3417,7 +3498,7 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
             m_pendingArea = QRectF();
         });
     m_welcome->hide();
-    m_resumeBox->hide();
+    m_searchRow->show();
     m_loadBtn->setText({});
     m_loadBtn->setToolTip(tr("Charger la ville"));
     m_statsCard->show();
@@ -3440,9 +3521,10 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
     applyPendingView();
     Audio::instance().play(Audio::NewLine);
     // première partie : tutoriel proposé automatiquement (nouvelle partie libre seulement)
-    if (!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
-        && m_metro->mission().id.isEmpty())
+    if (m_pendingTutorial || (!QSettings().value("tutorial/done", false).toBool() && m_metro->stations().isEmpty()
+        && m_metro->mission().id.isEmpty()))
         QTimer::singleShot(900, this, [this] { startTutorial("basics"); });
+    m_pendingTutorial = false;
 }
 
 void MainWindow::extendMap(int side)
@@ -4109,13 +4191,12 @@ void MainWindow::refreshResume()
 {
     m_resumePath = latestAutosave();
     m_resumeAction->setEnabled(!m_resumePath.isEmpty());
-    if (m_resumePath.isEmpty() || m_metro->city()) {
-        m_resumeBox->hide();
-        return;
-    }
     QFile f(m_resumePath);
-    if (!f.open(QIODevice::ReadOnly)) {
-        m_resumeBox->hide();
+    const bool available = !m_resumePath.isEmpty() && f.open(QIODevice::ReadOnly);
+    m_resumeHomeBtn->setVisible(available);
+    if (!available) {
+        if (m_startPages->currentIndex() == 2)
+            showStartPage(0);
         return;
     }
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
@@ -4130,7 +4211,26 @@ void MainWindow::refreshResume()
                                .arg(QLocale().toString(o.value("money").toDouble(), 'f', 1))
                                .arg(QLocale().toString(when, "d MMMM 'à' HH:mm"))
                                .arg(o.value("week").toInt(1)));
-    m_resumeBox->show();
+}
+
+void MainWindow::showStartPage(int page)
+{
+    if (page != 1 && m_pendingTutorial && m_startPages->currentIndex() == 1)
+        m_pendingTutorial = false; // retour sans lancer le tutoriel
+    m_startPages->setCurrentIndex(page);
+    m_startSubtitle->setVisible(page == 0);
+    m_tutoNote->setVisible(m_pendingTutorial);
+    m_searchRow->setVisible(page == 1 || m_metro->city());
+    if (page == 1) {
+        m_cityEdit->setFocus();
+        m_cityEdit->selectAll();
+    }
+    // la page affichée seule dicte la hauteur de la carte
+    for (int i = 0; i < m_startPages->count(); ++i)
+        m_startPages->widget(i)->setSizePolicy(QSizePolicy::Preferred,
+                                               i == page ? QSizePolicy::Preferred : QSizePolicy::Ignored);
+    m_startPages->adjustSize();
+    layoutOverlays();
 }
 
 void MainWindow::closeEvent(QCloseEvent *e)

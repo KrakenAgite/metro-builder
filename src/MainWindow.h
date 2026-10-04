@@ -25,6 +25,7 @@ class Achievements;
 struct ScenarioDef;
 class QLineEdit;
 class QComboBox;
+class QStackedWidget;
 class QPushButton;
 class QToolButton;
 class QButtonGroup;
@@ -250,6 +251,12 @@ private:
     int m_newSurvivalYears = 10; // 0 : partie libre sans fin
     bool m_newAnger = false;
     QLabel *m_survivalInfo = nullptr;
+    QStackedWidget *m_startPages = nullptr;
+    QLabel *m_startSubtitle = nullptr, *m_tutoNote = nullptr;
+    QPushButton *m_resumeHomeBtn = nullptr;
+    QWidget *m_searchRow = nullptr;
+    bool m_pendingTutorial = false; // tutoriel demandé depuis l'accueil
+    void showStartPage(int page);
 
     // défis : scénarios, succès, réseau réel
     TransitImporter *m_transit;

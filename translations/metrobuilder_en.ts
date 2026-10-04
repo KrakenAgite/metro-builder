@@ -276,10 +276,6 @@
         <translation>Real metro imported: %1 lines, %2 stations</translation>
     </message>
     <message>
-        <source>Dessinez le métro d&apos;une vraie ville à partir d&apos;OpenStreetMap : placez les stations, tracez les lignes et répondez à la demande.</source>
-        <translation>Draw the metro of a real city from OpenStreetMap: place stations, lay out lines and meet the demand.</translation>
-    </message>
-    <message>
         <source>Carrière</source>
         <translation>Career</translation>
     </message>
@@ -300,10 +296,6 @@
         <translation>Scenarios</translation>
     </message>
     <message>
-        <source>Missions sur de grandes capitales</source>
-        <translation>Missions in great capitals</translation>
-    </message>
-    <message>
         <source>Succès</source>
         <translation>Achievements</translation>
     </message>
@@ -314,10 +306,6 @@
     <message>
         <source>Demi-côté de la zone de jeu (au-delà de 4 km la carte devient plus lourde à afficher)</source>
         <translation>Half-width of the play area (beyond 4 km the map gets heavier to display)</translation>
-    </message>
-    <message>
-        <source>Charger</source>
-        <translation>Load</translation>
     </message>
     <message>
         <source>Menu</source>
@@ -2193,7 +2181,7 @@ The current network is replaced; imported stations and lines are free.</translat
     </message>
     <message>
         <source>Colère de la ville</source>
-        <translation>City's anger</translation>
+        <translation>City&apos;s anger</translation>
     </message>
     <message>
         <source>La ville exige une part croissante de la demande captée (dès la 2e année) : 6 mois d&apos;affilée en dessous et la mairie reprend le réseau</source>
@@ -2270,6 +2258,42 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Nouvelle partie</source>
         <translation>New game</translation>
+    </message>
+    <message>
+        <source>Dessinez le métro d&apos;une vraie ville.</source>
+        <translation>Draw the metro of a real city.</translation>
+    </message>
+    <message>
+        <source>Tutoriel</source>
+        <translation>Tutorial</translation>
+    </message>
+    <message>
+        <source>Lance une partie guidée pas à pas sur la ville de votre choix</source>
+        <translation>Starts a step-by-step guided game in the city of your choice</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Options</translation>
+    </message>
+    <message>
+        <source>Tutoriel : choisissez une ville, la leçon « Les bases » démarre dès que la carte est chargée.</source>
+        <translation>Tutorial: choose a city, the “Basics” lesson starts as soon as the map is loaded.</translation>
+    </message>
+    <message>
+        <source>Mode :</source>
+        <translation>Mode:</translation>
+    </message>
+    <message>
+        <source>Ville et taille de la zone :</source>
+        <translation>City and area size:</translation>
+    </message>
+    <message>
+        <source>Autre sauvegarde…</source>
+        <translation>Other save…</translation>
+    </message>
+    <message>
+        <source>Reprendre cette partie</source>
+        <translation>Resume this game</translation>
     </message>
 </context>
 <context>
