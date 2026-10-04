@@ -1800,10 +1800,6 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>%1 · week %2, year %3</translation>
     </message>
     <message>
-        <source>Tutoriels…</source>
-        <translation>Tutorials…</translation>
-    </message>
-    <message>
         <source>Les bases</source>
         <translation>The basics</translation>
     </message>
@@ -1886,10 +1882,6 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Ouvrez le bouton Lignes (en bas à gauche) et choisissez une ligne, ou cliquez sur son tracé : sa fiche s&apos;ouvre à gauche.</source>
         <translation>Open the Lines button (bottom left) and choose a line, or click its track: its panel opens on the left.</translation>
-    </message>
-    <message>
-        <source>Vous connaissez l&apos;essentiel. D&apos;autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !</source>
-        <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in ☰ → Help → Tutorials, whenever you like. Happy building!</translation>
     </message>
     <message>
         <source>Courbez un tracé</source>
@@ -2294,6 +2286,30 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Reprendre cette partie</source>
         <translation>Resume this game</translation>
+    </message>
+    <message>
+        <source>Vous connaissez l&apos;essentiel. D&apos;autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Tutoriel, quand vous voulez. Bonne construction !</source>
+        <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in ☰ → Tutorial whenever you like. Happy building!</translation>
+    </message>
+    <message>
+        <source>Leçon terminée</source>
+        <translation>Lesson complete</translation>
+    </message>
+    <message>
+        <source>« %1 » : bravo !</source>
+        <translation>“%1”: well done!</translation>
+    </message>
+    <message>
+        <source>Vous avez vu toutes les leçons. Elles restent disponibles dans ☰ → Tutoriel.</source>
+        <translation>You have seen every lesson. They remain available in ☰ → Tutorial.</translation>
+    </message>
+    <message>
+        <source>Leçon suivante : « %1 ». Toutes les leçons sont dans ☰ → Tutoriel.</source>
+        <translation>Next lesson: “%1”. All lessons are in ☰ → Tutorial.</translation>
+    </message>
+    <message>
+        <source>Passer au tutoriel suivant</source>
+        <translation>Go to the next tutorial</translation>
     </message>
 </context>
 <context>

@@ -591,6 +591,7 @@ Card *MainWindow::buildCityCard()
     QMenu *game = menu->addMenu(Icons::icon(Icons::Save), tr("Partie"));
     QMenu *mapMenu = menu->addMenu(Icons::icon(Icons::Recenter), tr("Carte"));
     QMenu *challenges = menu->addMenu(Icons::icon(Icons::Target), tr("Défis"));
+    QMenu *tutoMenu = menu->addMenu(Icons::icon(Icons::Play), tr("Tutoriel"));
     QMenu *settingsMenu = menu->addMenu(Icons::icon(Icons::Sliders), tr("Réglages"));
     QMenu *helpMenu = menu->addMenu(Icons::icon(Icons::Info), tr("Aide"));
     QAction *overpassAct = game->addAction(Icons::icon(Icons::File), tr("Ouvrir un fichier Overpass JSON…"), this, [this] {
@@ -762,9 +763,13 @@ Card *MainWindow::buildCityCard()
         const QString c = code;
         connect(a, &QAction::triggered, this, [this, c] { setLanguage(c); });
     }
-    QAction *tutorialAct = challenges->addAction(Icons::icon(Icons::Play), tr("Tutoriels…"), this,
-                                                 &MainWindow::showLessons);
-    helpMenu->addAction(tutorialAct); // les leçons sont aussi dans l'aide
+    // rubrique Tutoriel : une entrée par leçon (✔ une fois terminée)
+    for (const Lesson &l : lessons()) {
+        QAction *a = tutoMenu->addAction(l.title, this, [this, id = l.id] { startTutorial(id); });
+        a->setToolTip(l.description);
+        m_lessonActions.insert(l.id, a);
+    }
+    refreshLessonActions();
     helpMenu->addAction(Icons::icon(Icons::Info), tr("Aide et raccourcis"), QKeySequence::HelpContents, this,
                         &MainWindow::showHelp);
 
@@ -782,7 +787,7 @@ Card *MainWindow::buildCityCard()
     order(game, {saveAct, saveAsAct, loadAct, m_resumeAction, autoMenu->menuAction(), nullptr, m_undoAction,
                  m_redoAction, nullptr, overpassAct});
     order(mapMenu, {fitAct, nightAct, extend->menuAction(), nullptr, exportAct, captureAct});
-    order(challenges, {scenariosAct, achievementsAct, tutorialAct, nullptr, importAct, m_sandboxAction});
+    order(challenges, {scenariosAct, achievementsAct, nullptr, importAct, m_sandboxAction});
     // raccourcis actifs même menu fermé (actions des rubriques et de leurs sous-menus)
     std::function<void(QMenu *)> registerShortcuts = [&](QMenu *m) {
         for (QAction *a : m->actions()) {
@@ -2505,11 +2510,25 @@ Card *MainWindow::buildTutorialCard()
     m_tutSkip = new QPushButton(tr("Passer le tutoriel"));
     m_tutSkip->setProperty("variant", "ghost");
     m_tutSkip->setCursor(Qt::PointingHandCursor);
-    connect(m_tutSkip, &QPushButton::clicked, this, [this] { endTutorial(false); });
+    connect(m_tutSkip, &QPushButton::clicked, this, [this] {
+        if (m_tutorialStep < 0) { // écran de fin de leçon : « Terminer »
+            m_tutorialCard->hide();
+            layoutOverlays();
+            return;
+        }
+        endTutorial(false);
+    });
     m_tutNext = new QPushButton(tr("Suivant"));
     m_tutNext->setProperty("variant", "primary");
     m_tutNext->setCursor(Qt::PointingHandCursor);
-    connect(m_tutNext, &QPushButton::clicked, this, [this] { showTutorialStep(m_tutorialStep + 1); });
+    connect(m_tutNext, &QPushButton::clicked, this, [this] {
+        if (m_tutorialStep < 0) { // écran de fin de leçon : leçon suivante
+            if (!m_nextLesson.isEmpty())
+                startTutorial(m_nextLesson);
+            return;
+        }
+        showTutorialStep(m_tutorialStep + 1);
+    });
     buttons->addWidget(m_tutSkip);
     buttons->addStretch();
     buttons->addWidget(m_tutNext);
@@ -2520,7 +2539,7 @@ Card *MainWindow::buildTutorialCard()
 }
 
 // Leçons du tutoriel : « Les bases » est proposée à la première partie, les autres se choisissent
-// dans ☰ → Aide → Tutoriels (on n'apprend que ce qui intéresse).
+// dans ☰ → Tutoriel (on n'apprend que ce qui intéresse).
 const QVector<MainWindow::Lesson> &MainWindow::lessons()
 {
     static const QVector<Lesson> list = {
@@ -2590,7 +2609,7 @@ QVector<MainWindow::TutStep> MainWindow::lessonSteps(const QString &id)
              w(m_displayBtn), {}},
             {tr("À vous de jouer"),
              tr("Vous connaissez l'essentiel. D'autres leçons courtes (tracés, exploitation, finances, viaducs…) "
-                "vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !"),
+                "vous attendent dans ☰ → Tutoriel, quand vous voulez. Bonne construction !"),
              w(m_gameMenuBtn), {}},
         };
     } else if (id == "tracks") {
@@ -2848,6 +2867,30 @@ void MainWindow::endTutorial(bool completed)
     m_tutSteps.clear();
     m_tutorialCard->hide();
     static_cast<HighlightRing *>(m_tutRing)->target(nullptr); // masque et arrête l'animation
+    refreshLessonActions();
+    if (completed) { // fin de leçon : terminer, ou enchaîner sur la suivante
+        const QVector<Lesson> &all = lessons();
+        QString title;
+        m_nextLesson.clear();
+        for (int i = 0; i < all.size(); ++i)
+            if (all[i].id == m_tutLesson) {
+                title = all[i].title;
+                if (i + 1 < all.size())
+                    m_nextLesson = all[i + 1].id;
+            }
+        m_tutStep->setText(tr("Leçon terminée").toUpper());
+        m_tutTitle->setText(tr("« %1 » : bravo !").arg(title));
+        QString next;
+        for (const Lesson &l : all)
+            if (l.id == m_nextLesson)
+                next = l.title;
+        m_tutText->setText(next.isEmpty() ? tr("Vous avez vu toutes les leçons. Elles restent disponibles dans ☰ → Tutoriel.")
+                                          : tr("Leçon suivante : « %1 ». Toutes les leçons sont dans ☰ → Tutoriel.").arg(next));
+        m_tutSkip->setText(tr("Terminer"));
+        m_tutNext->setText(tr("Passer au tutoriel suivant"));
+        m_tutNext->setVisible(!next.isEmpty());
+        m_tutorialCard->show();
+    }
     layoutOverlays();
 }
 
@@ -2884,6 +2927,15 @@ void MainWindow::showTutorialStep(int step)
     m_tutorialCard->show();
     layoutOverlays();
     m_layoutTimer.start(0);
+}
+
+void MainWindow::refreshLessonActions()
+{
+    QSettings st;
+    for (auto it = m_lessonActions.begin(); it != m_lessonActions.end(); ++it) {
+        const bool done = st.value(QStringLiteral("tutorial/%1").arg(it.key()), false).toBool();
+        it.value()->setIcon(done ? Icons::icon(Icons::Trophy, QColor("#3DDC97")) : Icons::icon(Icons::Play));
+    }
 }
 
 void MainWindow::checkTutorial()

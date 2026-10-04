@@ -163,7 +163,7 @@ L'interface est une carte plein écran avec des panneaux flottants :
   (tablier et piliers).
 
 **Confort**
-- **Tutoriels** : des leçons courtes et indépendantes, à choisir dans ☰ → Aide → Tutoriels (ou ☰ → Défis) :
+- **Tutoriels** : des leçons courtes et indépendantes, à choisir dans la rubrique ☰ → Tutoriel (✔ vert une fois faites ; en fin de leçon, « Terminer » ou « Passer au tutoriel suivant ») :
   *Les bases* (proposée automatiquement à la première partie), *Tracés et arrêts*, *Exploitation des lignes*,
   *Finances et politique*, *Correspondances et itinéraires*, *Tunnels et viaducs*, *Carte et affichage*,
   *Temps, événements et objectifs*, *Défis*. On ne suit que celles qui intéressent ; une coche marque les leçons

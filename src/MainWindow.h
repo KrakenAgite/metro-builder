@@ -223,6 +223,9 @@ private:
     QWidget *m_tutRing = nullptr;
     int m_tutorialStep = -1;
     QString m_tutLesson;
+    QString m_nextLesson;
+    QHash<QString, QAction *> m_lessonActions;
+    void refreshLessonActions();
     QVector<TutStep> m_tutSteps;
     Card *m_lessonsCard;
     QVBoxLayout *m_lessonList;

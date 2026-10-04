@@ -227,7 +227,16 @@ QWidget *GameMenu::actionRow(QAction *a)
     }
     rl->insertStretch(2, 1);
     b->setEnabled(a->isEnabled());
-    connect(a, &QAction::changed, b, [a, b] { b->setEnabled(a->isEnabled()); });
+    connect(a, &QAction::changed, b, [a, b, icon, text, hint] {
+        b->setEnabled(a->isEnabled());
+        icon->setPixmap(a->icon().pixmap(18, 18));
+        text->setText(clean(a->text()));
+        hint->setText(a->toolTip() != clean(a->text()) && !a->toolTip().isEmpty() && a->shortcut().isEmpty()
+                          ? a->toolTip()
+                          : a->shortcut().toString(QKeySequence::NativeText));
+    });
+    if (a->shortcut().isEmpty() && !a->toolTip().isEmpty() && a->toolTip() != clean(a->text()))
+        hint->setText(a->toolTip());
     connect(b, &QPushButton::clicked, this, [this, a] {
         close();
         a->trigger();
