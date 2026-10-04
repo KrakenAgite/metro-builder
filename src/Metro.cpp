@@ -75,6 +75,7 @@ void Metro::updateCity(QSharedPointer<CityData> city)
 
 void Metro::reset()
 {
+    m_survival = Survival();
     m_stations.clear();
     m_lines.clear();
     m_nextStationId = 1;
@@ -1201,6 +1202,7 @@ void Metro::closeMonth()
     m_current = MonthRecord();
     checkGoals();
     rollEvents(); // les nouveaux événements se tirent en fin de mois
+    checkSurvival();
 }
 
 MonthRecord Metro::currentMonth() const
@@ -1345,7 +1347,8 @@ QJsonObject Metro::save() const
                        {"goals", goalsJson()},
                        {"sandbox", m_sandbox},
                        {"economy", economyJson()},
-                       {"mission", missionJson()}};
+                       {"mission", missionJson()},
+                       {"survival", survivalJson()}};
     for (auto it = rest.begin(); it != rest.end(); ++it)
         o.insert(it.key(), it.value());
     return o;
@@ -1455,6 +1458,7 @@ bool Metro::load(const QJsonObject &o)
     loadGoals(o.value("goals").toObject()); // absent (ancienne sauvegarde) : objectifs repris du début
     loadEconomy(o.value("economy").toObject());
     loadMission(o.value("mission").toObject());
+    loadSurvival(o.value("survival").toObject());
     buildGrid(); // croissance urbaine sauvegardée
     // anciennes sauvegardes sans historique : on repart du mois en cours
     m_financeSeconds = std::max(m_financeSeconds, m_history.size() * Rules::SecondsPerMonth);

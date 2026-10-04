@@ -33,6 +33,8 @@ const QVector<Achievements::Def> &Achievements::all()
         {"scenario", tr("Mission accomplie"), tr("Réussir un scénario")},
         {"scenario3", tr("Perfectionniste"), tr("Réussir un scénario avec 3 étoiles")},
         {"allcapitals", tr("Tour du monde"), tr("Réussir les 6 scénarios")},
+        {"survivor", tr("Survivant"), tr("Gagner une partie de survie")},
+        {"survivor20", tr("Une vie de métro"), tr("Tenir 20 ans en survie")},
     };
     return defs;
 }

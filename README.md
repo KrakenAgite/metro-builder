@@ -114,6 +114,12 @@ L'interface est une carte plein écran avec des panneaux flottants :
     arrêts, rames, tracés, noms, couleurs) ; la construction annulée est intégralement remboursée.
 12. **Bac à sable** : à choisir sur l'écran d'accueil (« Carrière » / « Bac à sable ») ou ☰ pour la partie en
     cours (sans retour) : construction gratuite, ni événements ni score ; le mode est enregistré dans la sauvegarde.
+    **But de la partie (Carrière)** : sous « Carrière », choisissez de **tenir 5, 10 ou 20 ans** (ou une partie sans fin).
+    On perd par **faillite** : 6 mois d'affilée avec une trésorerie négative. L'option **Colère de la ville** ajoute
+    une seconde défaite : dès la 2e année, la ville exige une part de la demande captée (10 %, puis +4 points par an,
+    40 % au plus) ; 6 mois d'affilée en dessous et la mairie reprend le réseau. Les alertes et le compte à rebours
+    s'affichent dans la carte Objectifs (**O**). Une fois la durée tenue : écran de victoire (1 à 3 ★ selon la
+    demande captée, 2 ★ dès 30 %, 3 ★ dès 50 %), puis la partie continue librement.
 13. **Gestion du réseau** (panneau Finances, **B**) :
     - **Prix du ticket** (1 à 4 €) : plus cher, chaque voyage rapporte plus mais la fréquentation baisse
       (environ −40 % par euro) ; la recette est maximale vers 1,80 €.

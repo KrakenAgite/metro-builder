@@ -116,6 +116,7 @@ void Metro::startScenario(const ScenarioDef &def)
     setSandbox(false);
     m_money = def.money;
     m_mission = Mission();
+    m_survival = Survival(); // la mission remplace le but de survie
     m_mission.id = def.id;
     m_mission.title = def.title;
     m_mission.cityLabel = def.cityLabel;

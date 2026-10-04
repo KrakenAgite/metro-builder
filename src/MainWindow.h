@@ -93,6 +93,7 @@ private:
     void showAchievements();
     void playScenario(const QString &id);
     void onMissionFinished(bool won, int stars);
+    void onSurvivalFinished(bool won, int detail);
     void importRealNetwork();
     void refreshGoals();
     void onGoalCompleted(const Objective &goal);
@@ -245,6 +246,10 @@ private:
     QAction *m_undoAction, *m_redoAction, *m_sandboxAction;
     QToolButton *m_modeCareer, *m_modeSandbox;
     bool m_newSandbox = false; // mode des nouvelles parties
+    QWidget *m_survivalOptions = nullptr;
+    int m_newSurvivalYears = 10; // 0 : partie libre sans fin
+    bool m_newAnger = false;
+    QLabel *m_survivalInfo = nullptr;
 
     // défis : scénarios, succès, réseau réel
     TransitImporter *m_transit;

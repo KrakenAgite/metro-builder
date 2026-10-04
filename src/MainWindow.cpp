@@ -16,6 +16,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QButtonGroup>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QEvent>
 #include <QFile>
@@ -284,6 +285,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_metro, &Metro::undoChanged, this, &MainWindow::refreshUndo);
     connect(m_metro, &Metro::missionFinished, this, &MainWindow::onMissionFinished);
+    connect(m_metro, &Metro::survivalFinished, this, &MainWindow::onSurvivalFinished);
     connect(m_metro, &Metro::missionChanged, this, &MainWindow::refreshGoals);
     connect(m_achievements, &Achievements::unlocked, this, [this](const Achievements::Def &d) {
         m_toast->show(tr("Succès débloqué : %1 — %2").arg(d.title, d.description), false, true);
@@ -389,6 +391,8 @@ Card *MainWindow::buildCityCard()
     connect(m_modeSandbox, &QToolButton::toggled, this, [this](bool on) {
         m_newSandbox = on;
         QSettings().setValue("game/sandbox", on);
+        m_survivalOptions->setVisible(!on);
+        layoutOverlays();
     });
     modeRow->addStretch();
     auto *scenBtn = new QPushButton(Icons::icon(Icons::Target), tr("Scénarios"));
@@ -403,6 +407,51 @@ Card *MainWindow::buildCityCard()
     connect(achBtn, &QPushButton::clicked, this, &MainWindow::showAchievements);
     modeRow->addWidget(achBtn);
     wt->addLayout(modeRow);
+    // but de la partie carrière : tenir N années sans faillite (et, en option, sans fâcher la ville)
+    m_survivalOptions = new QWidget;
+    auto *svl = new QHBoxLayout(m_survivalOptions);
+    svl->setContentsMargins(0, 4, 0, 0);
+    svl->setSpacing(4);
+    auto *goalLabel = new QLabel(tr("Tenir :"));
+    goalLabel->setProperty("role", "caption");
+    svl->addWidget(goalLabel);
+    m_newSurvivalYears = QSettings().value("game/survivalYears", 10).toInt();
+    m_newAnger = QSettings().value("game/anger", false).toBool();
+    auto *yearsGroup = new QButtonGroup(this);
+    const QList<QPair<int, QString>> durations = {
+        {5, tr("5 ans")}, {10, tr("10 ans")}, {20, tr("20 ans")}, {0, tr("Sans fin")}};
+    for (const auto &[y, text] : durations) {
+        auto *b = new QToolButton;
+        b->setText(text);
+        b->setCheckable(true);
+        b->setProperty("variant", "segment");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setToolTip(y > 0 ? tr("Gagnez en tenant %1 ans sans faire faillite (6 mois d'affilée dans le rouge)").arg(y)
+                            : tr("Partie libre : pas de victoire, seule la faillite peut l'arrêter"));
+        b->setChecked(y == m_newSurvivalYears);
+        yearsGroup->addButton(b);
+        svl->addWidget(b);
+        connect(b, &QToolButton::toggled, this, [this, y](bool on) {
+            if (!on)
+                return;
+            m_newSurvivalYears = y;
+            QSettings().setValue("game/survivalYears", y);
+        });
+    }
+    auto *anger = new QCheckBox(tr("Colère de la ville"));
+    anger->setChecked(m_newAnger);
+    anger->setCursor(Qt::PointingHandCursor);
+    anger->setToolTip(tr("La ville exige une part croissante de la demande captée (dès la 2e année) : "
+                         "6 mois d'affilée en dessous et la mairie reprend le réseau"));
+    connect(anger, &QCheckBox::toggled, this, [this](bool on) {
+        m_newAnger = on;
+        QSettings().setValue("game/anger", on);
+    });
+    svl->addSpacing(8);
+    svl->addWidget(anger);
+    svl->addStretch();
+    m_survivalOptions->setVisible(!m_newSandbox);
+    wt->addWidget(m_survivalOptions);
     wl->addLayout(wt, 1);
     lay->addWidget(m_welcome);
 
@@ -1590,6 +1639,11 @@ Card *MainWindow::buildGoalsCard()
     head->addWidget(close, 0, Qt::AlignTop);
     lay->addLayout(head);
 
+    m_survivalInfo = new QLabel;
+    m_survivalInfo->setWordWrap(true);
+    m_survivalInfo->setTextFormat(Qt::RichText);
+    m_survivalInfo->setStyleSheet("background: rgba(255,255,255,0.05); border-radius: 8px; padding: 6px 8px;");
+    lay->addWidget(m_survivalInfo);
     m_goalsSection = section(tr("Objectifs"));
     lay->addWidget(m_goalsSection);
     for (int i = 0; i < 3; ++i) {
@@ -1653,6 +1707,37 @@ void MainWindow::refreshGoals()
         return;
     m_scoreValue->setText(tr("%1 points").arg(count(score)));
     m_scoreSub->setText(tr("+%1 à la fin du mois · record %2").arg(count(m_metro->monthPoints())).arg(count(m_bestScore)));
+    const Survival &sv = m_metro->survival();
+    m_survivalInfo->setVisible(sv.years > 0 && m_metro->mission().id.isEmpty());
+    if (m_survivalInfo->isVisible()) {
+        QStringList parts;
+        const bool endless = sv.years >= 1000;
+        if (sv.status == 1)
+            parts << tr("<b>Victoire</b> %1 · partie libre désormais").arg(QString(sv.stars, QChar(0x2605)));
+        else if (sv.status == 2)
+            parts << tr("<b>Partie perdue</b>");
+        else if (!endless) {
+            const int left = m_metro->survivalMonthsLeft();
+            parts << tr("<b>Tenir %1 ans</b> · encore %2 an(s) et %3 mois")
+                         .arg(sv.years).arg(left / 12).arg(left % 12);
+        } else
+            parts << tr("<b>Partie sans fin</b> · évitez la faillite");
+        if (sv.status == 0) {
+            const QString warn = QStringLiteral("<span style='color:#F5C542'>%1</span>");
+            parts << (sv.redMonths > 0 ? warn.arg(tr("Dans le rouge : %1/%2 mois avant la faillite")
+                                                      .arg(sv.redMonths).arg(Metro::RedMonthsMax))
+                                       : tr("Trésorerie saine"));
+            if (sv.anger) {
+                const double need = m_metro->angerThreshold();
+                const QString line = need > 0 ? tr("Satisfaction %1 % · %2 % exigés")
+                                                    .arg(qRound(m_metro->satisfaction() * 100)).arg(qRound(need * 100))
+                                              : tr("La ville patiente : aucune exigence la 1re année");
+                parts << (sv.angryMonths > 0 ? warn.arg(line + tr(" · mécontente %1/%2 mois").arg(sv.angryMonths).arg(Metro::AngryMonthsMax))
+                                             : line);
+            }
+        }
+        m_survivalInfo->setText(parts.join("<br>"));
+    }
     const Mission &mission = m_metro->mission();
     if (!mission.id.isEmpty()) { // scénario : conditions de victoire et échéance
         const int left = m_metro->monthsLeft();
@@ -2179,6 +2264,60 @@ void MainWindow::onMissionFinished(bool won, int stars)
         m_endText->setText(tr("Le délai de « %1 » est dépassé. Réessayez, ou continuez cette partie librement.").arg(m.title));
         button(tr("Continuer librement"), false, [] {});
         button(tr("Réessayer"), true, [this, id] { playScenario(id); });
+        Audio::instance().play(Audio::Bad);
+    }
+    m_speedGroup->button(0)->click(); // pause
+    m_missionEndCard->show();
+    refreshGoals();
+    layoutOverlays();
+    m_layoutTimer.start(0);
+}
+
+void MainWindow::onSurvivalFinished(bool won, int detail)
+{
+    const Survival &sv = m_metro->survival();
+    clearLayout(m_endButtons);
+    auto button = [this](const QString &text, bool primary, std::function<void()> fn) {
+        auto *b = new QPushButton(text);
+        b->setProperty("variant", primary ? "primary" : "ghost");
+        b->setCursor(Qt::PointingHandCursor);
+        connect(b, &QPushButton::clicked, this, [this, fn] {
+            m_missionEndCard->hide();
+            fn();
+        });
+        m_endButtons->addWidget(b);
+    };
+    m_endButtons->addStretch();
+    const QString stats = tr("Score %1 · %2 stations · %3 voyageurs/h · %4 % de la demande captée")
+                              .arg(count(m_metro->score()))
+                              .arg(m_metro->stations().size())
+                              .arg(count(m_metro->totalServed()))
+                              .arg(qRound(m_metro->satisfaction() * 100));
+    if (won) {
+        m_achievements->unlock("survivor");
+        if (sv.years >= 20)
+            m_achievements->unlock("survivor20");
+        m_endStars->setText(starsText(detail));
+        m_endTitle->setText(tr("Victoire : %1 ans tenus !").arg(sv.years));
+        m_endText->setText(tr("Le réseau a traversé %1 ans sans faillite. Les étoiles récompensent la part de la "
+                              "demande captée (2 ★ dès 30 %, 3 ★ dès 50 %).<br><br>%2<br><br>"
+                              "Vous pouvez continuer à développer le réseau librement.")
+                               .arg(sv.years).arg(stats));
+        button(tr("Nouvelle ville"), false, [this] { m_cityCard->show(); m_cityEdit->setFocus(); m_cityEdit->selectAll(); });
+        button(tr("Continuer à jouer"), true, [] {});
+        Audio::instance().play(Audio::NewLine);
+        QTimer::singleShot(600, this, [] { Audio::instance().play(Audio::Coins); });
+    } else {
+        const int months = m_metro->month() - sv.startMonth;
+        m_endStars->setText(starsText(0));
+        m_endTitle->setText(detail == Survival::Bankruptcy ? tr("Faillite") : tr("La mairie reprend le réseau"));
+        m_endText->setText((detail == Survival::Bankruptcy
+                                ? tr("Six mois d'affilée dans le rouge : la banque coupe les crédits après %1 an(s) et %2 mois d'exploitation.")
+                                : tr("Six mois d'affilée sous la satisfaction exigée : la ville vous retire l'exploitation après %1 an(s) et %2 mois."))
+                               .arg(months / 12).arg(months % 12)
+                           + "<br><br>" + stats);
+        button(tr("Continuer quand même"), false, [] {});
+        button(tr("Nouvelle partie"), true, [this] { m_cityCard->show(); m_cityEdit->setFocus(); m_cityEdit->selectAll(); });
         Audio::instance().play(Audio::Bad);
     }
     m_speedGroup->button(0)->click(); // pause
@@ -3242,6 +3381,8 @@ void MainWindow::onCityLoaded(QSharedPointer<CityData> city)
         m_pendingGame = {};
     } else {
         m_metro->setSandbox(m_newSandbox); // nouvelle partie
+        if (!m_newSandbox && m_pendingScenario.isEmpty())
+            m_metro->startSurvival(m_newSurvivalYears > 0 ? m_newSurvivalYears : 1000, m_newAnger);
     }
     m_routeActive = false;
     m_routeCard->hide();

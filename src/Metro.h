@@ -266,6 +266,20 @@ struct Mission {
     bool active() const { return !id.isEmpty() && status == 0; }
 };
 
+// Partie de survie : tenir un nombre d'années sans faire faillite (ni, en option, fâcher la ville)
+struct Survival {
+    enum Reason { None, Bankruptcy, Anger };
+    int years = 0;          // 0 : pas de but de survie
+    bool anger = false;     // le mécontentement peut faire perdre
+    int startMonth = 1;
+    int redMonths = 0;      // mois d'affilée avec une trésorerie négative
+    int angryMonths = 0;    // mois d'affilée sous le seuil de satisfaction
+    int status = 0;         // 0 en cours, 1 gagnée, 2 perdue
+    int reason = None;
+    int stars = 0;
+    bool active() const { return years > 0 && status == 0; }
+};
+
 // Bilan d'un mois de jeu (montants en M€)
 struct MonthRecord {
     int month = 0;
@@ -438,6 +452,11 @@ public:
     static const ScenarioDef *scenario(const QString &id);
     void startScenario(const ScenarioDef &def);
     const Mission &mission() const { return m_mission; }
+    void startSurvival(int years, bool anger);
+    const Survival &survival() const { return m_survival; }
+    int survivalMonthsLeft() const;
+    double angerThreshold() const; // satisfaction minimale exigée par la ville (0..1)
+    static constexpr int RedMonthsMax = 6, AngryMonthsMax = 6, AngerGrace = 12;
     int monthsLeft() const { return m_mission.deadline - month() + 1; }
     void importNetwork(const QVector<ImportedLine> &lines); // remplace le réseau, sans frais
     double initialPopulation() const { return m_initialPopulation; }
@@ -466,6 +485,7 @@ signals:
     void undoChanged();
     void missionChanged();
     void missionFinished(bool won, int stars);
+    void survivalFinished(bool won, int reason);
 
 private:
     Station *stationMut(int id);
@@ -490,6 +510,9 @@ private:
     void checkMission();
     QJsonObject missionJson() const;
     void loadMission(const QJsonObject &o);
+    void checkSurvival();
+    QJsonObject survivalJson() const;
+    void loadSurvival(const QJsonObject &o);
     void growCity();
     void applyGrowth();
     double maintenanceCostFactor() const;
@@ -557,6 +580,7 @@ private:
     QHash<qint64, float> m_growth;      // croissance autour des stations, par cellule (clé : coordonnées /100 m)
     double m_initialPopulation = 0;
     Mission m_mission;
+    Survival m_survival;
     bool m_freeBuild = false;
     bool m_nightClosure = true;
     QHash<qint64, double> m_denomCache; // attractivité des destinations vue de chaque position de station           // import du réseau réel : rien n'est facturé

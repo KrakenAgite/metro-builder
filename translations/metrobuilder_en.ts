@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
 <TS version="2.1" language="en_GB" sourcelanguage="fr_FR">
 <context>
     <name>Achievements</name>
@@ -23,7 +24,7 @@
         <translation>Going in circles</translation>
     </message>
     <message>
-        <source>Ouvrir une ligne circulaire d'au moins 5 stations</source>
+        <source>Ouvrir une ligne circulaire d&apos;au moins 5 stations</source>
         <translation>Open a loop line with at least 5 stations</translation>
     </message>
     <message>
@@ -67,7 +68,7 @@
         <translation>Capture 50% of demand</translation>
     </message>
     <message>
-        <source>Personne n'est oublié</source>
+        <source>Personne n&apos;est oublié</source>
         <translation>No one left behind</translation>
     </message>
     <message>
@@ -119,11 +120,11 @@
         <translation>Good as new</translation>
     </message>
     <message>
-        <source>Renouveler le matériel d'une ligne</source>
-        <translation>Renew a line's rolling stock</translation>
+        <source>Renouveler le matériel d&apos;une ligne</source>
+        <translation>Renew a line&apos;s rolling stock</translation>
     </message>
     <message>
-        <source>Plus vite qu'à pied</source>
+        <source>Plus vite qu&apos;à pied</source>
         <translation>Faster than walking</translation>
     </message>
     <message>
@@ -151,8 +152,8 @@
         <translation>The real metro</translation>
     </message>
     <message>
-        <source>Importer le métro réel d'une ville</source>
-        <translation>Import a city's real metro</translation>
+        <source>Importer le métro réel d&apos;une ville</source>
+        <translation>Import a city&apos;s real metro</translation>
     </message>
     <message>
         <source>Mission accomplie</source>
@@ -177,6 +178,22 @@
     <message>
         <source>Réussir les 6 scénarios</source>
         <translation>Complete all 6 scenarios</translation>
+    </message>
+    <message>
+        <source>Survivant</source>
+        <translation>Survivor</translation>
+    </message>
+    <message>
+        <source>Gagner une partie de survie</source>
+        <translation>Win a survival game</translation>
+    </message>
+    <message>
+        <source>Une vie de métro</source>
+        <translation>A lifetime of metro</translation>
+    </message>
+    <message>
+        <source>Tenir 20 ans en survie</source>
+        <translation>Last 20 years in survival</translation>
     </message>
 </context>
 <context>
@@ -259,7 +276,7 @@
         <translation>Real metro imported: %1 lines, %2 stations</translation>
     </message>
     <message>
-        <source>Dessinez le métro d'une vraie ville à partir d'OpenStreetMap : placez les stations, tracez les lignes et répondez à la demande.</source>
+        <source>Dessinez le métro d&apos;une vraie ville à partir d&apos;OpenStreetMap : placez les stations, tracez les lignes et répondez à la demande.</source>
         <translation>Draw the metro of a real city from OpenStreetMap: place stations, lay out lines and meet the demand.</translation>
     </message>
     <message>
@@ -368,7 +385,7 @@
     </message>
     <message>
         <source>Importer le métro réel de la ville</source>
-        <translation>Import the city's real metro</translation>
+        <translation>Import the city&apos;s real metro</translation>
     </message>
     <message>
         <source>Scénarios…</source>
@@ -395,7 +412,7 @@
         <translation>To the north</translation>
     </message>
     <message>
-        <source>Vers l'est</source>
+        <source>Vers l&apos;est</source>
         <translation>To the east</translation>
     </message>
     <message>
@@ -403,7 +420,7 @@
         <translation>To the south</translation>
     </message>
     <message>
-        <source>Vers l'ouest</source>
+        <source>Vers l&apos;ouest</source>
         <translation>To the west</translation>
     </message>
     <message>
@@ -415,7 +432,7 @@
         <translation>Sound</translation>
     </message>
     <message>
-        <source>Musique d'ambiance</source>
+        <source>Musique d&apos;ambiance</source>
         <translation>Background music</translation>
     </message>
     <message>
@@ -435,7 +452,7 @@
         <translation>Langue / Language</translation>
     </message>
     <message>
-        <source>Chargez d'abord une ville pour suivre le tutoriel</source>
+        <source>Chargez d&apos;abord une ville pour suivre le tutoriel</source>
         <translation>Load a city first to follow the tutorial</translation>
     </message>
     <message>
@@ -455,7 +472,7 @@
         <translation>Game date</translation>
     </message>
     <message>
-        <source>Voyageurs transportés à l'heure de pointe</source>
+        <source>Voyageurs transportés à l&apos;heure de pointe</source>
         <translation>Passengers carried at rush hour</translation>
     </message>
     <message>
@@ -463,7 +480,7 @@
         <translation>Share of travel demand captured by the metro</translation>
     </message>
     <message>
-        <source>Habitants à distance de marche d'une station en service</source>
+        <source>Habitants à distance de marche d&apos;une station en service</source>
         <translation>Residents within walking distance of a station in service</translation>
     </message>
     <message>
@@ -495,11 +512,11 @@
         <translation>Layer: captured / unserved demand</translation>
     </message>
     <message>
-        <source>Calque : densité d'habitants</source>
+        <source>Calque : densité d&apos;habitants</source>
         <translation>Layer: resident density</translation>
     </message>
     <message>
-        <source>Calque : densité d'emplois</source>
+        <source>Calque : densité d&apos;emplois</source>
         <translation>Layer: job density</translation>
     </message>
     <message>
@@ -564,7 +581,7 @@
     </message>
     <message>
         <source>Changer le numéro ou la lettre de la ligne</source>
-        <translation>Change the line's number or letter</translation>
+        <translation>Change the line&apos;s number or letter</translation>
     </message>
     <message>
         <source>Changer la couleur</source>
@@ -587,23 +604,23 @@
         <translation>Stops</translation>
     </message>
     <message>
-        <source>Monter l'arrêt</source>
+        <source>Monter l&apos;arrêt</source>
         <translation>Move the stop up</translation>
     </message>
     <message>
-        <source>Descendre l'arrêt</source>
+        <source>Descendre l&apos;arrêt</source>
         <translation>Move the stop down</translation>
     </message>
     <message>
-        <source>Retirer l'arrêt de la ligne</source>
+        <source>Retirer l&apos;arrêt de la ligne</source>
         <translation>Remove the stop from the line</translation>
     </message>
     <message>
         <source>Inverser le sens de la ligne</source>
-        <translation>Reverse the line's direction</translation>
+        <translation>Reverse the line&apos;s direction</translation>
     </message>
     <message>
-        <source>Choisissez l'outil « Tracer » puis cliquez des stations sur la carte (ou un lieu vide pour en créer une).</source>
+        <source>Choisissez l&apos;outil « Tracer » puis cliquez des stations sur la carte (ou un lieu vide pour en créer une).</source>
         <translation>Choose the « Lay out » tool then click stations on the map (or an empty spot to create one).</translation>
     </message>
     <message>
@@ -652,7 +669,7 @@
     </message>
     <message>
         <source>Remplacer tout le matériel de la ligne par du neuf (%1 % du prix)</source>
-        <translation>Replace all the line's rolling stock with new trains (%1% of the price)</translation>
+        <translation>Replace all the line&apos;s rolling stock with new trains (%1% of the price)</translation>
     </message>
     <message>
         <source>Vue en coupe : tunnels et viaducs</source>
@@ -823,7 +840,7 @@
         <translation>Route</translation>
     </message>
     <message>
-        <source>Effacer l'itinéraire</source>
+        <source>Effacer l&apos;itinéraire</source>
         <translation>Clear the route</translation>
     </message>
     <message>
@@ -839,12 +856,12 @@
         <translation>%1 on foot</translation>
     </message>
     <message>
-        <source>Aucun trajet en métro plus rapide : il manque une station à moins de 1,5 km du départ ou de l'arrivée, ou le détour est trop grand.</source>
+        <source>Aucun trajet en métro plus rapide : il manque une station à moins de 1,5 km du départ ou de l&apos;arrivée, ou le détour est trop grand.</source>
         <translation>No faster metro trip: a station within 1.5 km of the start or the end is missing, or the detour is too long.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;%1&lt;/b&gt; direction %2&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%3 → %4 · %5 · %6, attente comprise&lt;/span&gt;</source>
-        <translation>&lt;b&gt;%1&lt;/b&gt; towards %2&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%3 → %4 · %5 · %6, waiting included&lt;/span&gt;</translation>
+        <source>&lt;b&gt;%1&lt;/b&gt; direction %2&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%3 → %4 · %5 · %6, attente comprise&lt;/span&gt;</source>
+        <translation>&lt;b&gt;%1&lt;/b&gt; towards %2&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%3 → %4 · %5 · %6, waiting included&lt;/span&gt;</translation>
     </message>
     <message>
         <source>1 arrêt</source>
@@ -855,19 +872,19 @@
         <translation>%1 stops</translation>
     </message>
     <message>
-        <source>Correspondance à &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%2 avec l'attente&lt;/span&gt;</source>
-        <translation>Change at &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%2 including the wait&lt;/span&gt;</translation>
+        <source>Correspondance à &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%2 avec l&apos;attente&lt;/span&gt;</source>
+        <translation>Change at &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%2 including the wait&lt;/span&gt;</translation>
     </message>
     <message>
-        <source>Marcher jusqu'à &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%2 · %3 m&lt;/span&gt;</source>
-        <translation>Walk to &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%2 · %3 m&lt;/span&gt;</translation>
+        <source>Marcher jusqu&apos;à &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%2 · %3 m&lt;/span&gt;</source>
+        <translation>Walk to &lt;b&gt;%1&lt;/b&gt;&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%2 · %3 m&lt;/span&gt;</translation>
     </message>
     <message>
-        <source>Marcher jusqu'à l'arrivée&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%1 · %2 m&lt;/span&gt;</source>
-        <translation>Walk to the destination&lt;br&gt;&lt;span style='color:#9AA0A6'&gt;%1 · %2 m&lt;/span&gt;</translation>
+        <source>Marcher jusqu&apos;à l&apos;arrivée&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%1 · %2 m&lt;/span&gt;</source>
+        <translation>Walk to the destination&lt;br&gt;&lt;span style=&apos;color:#9AA0A6&apos;&gt;%1 · %2 m&lt;/span&gt;</translation>
     </message>
     <message>
-        <source>Créez au moins une ligne avant d'exporter le plan</source>
+        <source>Créez au moins une ligne avant d&apos;exporter le plan</source>
         <translation>Create at least one line before exporting the map</translation>
     </message>
     <message>
@@ -887,7 +904,7 @@
         <translation>Map exported: %1</translation>
     </message>
     <message>
-        <source>Impossible d'écrire %1</source>
+        <source>Impossible d&apos;écrire %1</source>
         <translation>Cannot write %1</translation>
     </message>
     <message>
@@ -903,15 +920,15 @@
         <translation>Map saved: %1</translation>
     </message>
     <message>
-        <source>Passer cette partie en bac à sable ? La construction devient gratuite, les événements et les objectifs s'arrêtent. On ne peut pas revenir en carrière.</source>
-        <translation>Switch this game to sandbox? Construction becomes free, events and objectives stop. You can't go back to career mode.</translation>
+        <source>Passer cette partie en bac à sable ? La construction devient gratuite, les événements et les objectifs s&apos;arrêtent. On ne peut pas revenir en carrière.</source>
+        <translation>Switch this game to sandbox? Construction becomes free, events and objectives stop. You can&apos;t go back to career mode.</translation>
     </message>
     <message>
         <source>Partie en bac à sable : construisez librement</source>
         <translation>Sandbox game: build freely</translation>
     </message>
     <message>
-        <source>Une ville, un budget, une échéance : remplissez toutes les conditions avant la fin. Plus vous allez vite, plus vous gagnez d'étoiles.</source>
+        <source>Une ville, un budget, une échéance : remplissez toutes les conditions avant la fin. Plus vous allez vite, plus vous gagnez d&apos;étoiles.</source>
         <translation>A city, a budget, a deadline: meet every condition before time runs out. The faster you are, the more stars you earn.</translation>
     </message>
     <message>
@@ -927,7 +944,7 @@
         <translation>serve %1% of residents</translation>
     </message>
     <message>
-        <source>%1 mois bénéficiaires d'affilée</source>
+        <source>%1 mois bénéficiaires d&apos;affilée</source>
         <translation>%1 profitable months in a row</translation>
     </message>
     <message>
@@ -943,8 +960,8 @@
         <translation>%1 lines</translation>
     </message>
     <message>
-        <source>Difficulté &lt;span style='color:#F5C542'&gt;%1&lt;/span&gt; · budget %2 · %3 ans · zone de %4 km%5&lt;br&gt;Objectifs : %6</source>
-        <translation>Difficulty &lt;span style='color:#F5C542'&gt;%1&lt;/span&gt; · budget %2 · %3 years · %4 km area%5&lt;br&gt;Objectives: %6</translation>
+        <source>Difficulté &lt;span style=&apos;color:#F5C542&apos;&gt;%1&lt;/span&gt; · budget %2 · %3 ans · zone de %4 km%5&lt;br&gt;Objectifs : %6</source>
+        <translation>Difficulty &lt;span style=&apos;color:#F5C542&apos;&gt;%1&lt;/span&gt; · budget %2 · %3 years · %4 km area%5&lt;br&gt;Objectives: %6</translation>
     </message>
     <message>
         <source> · métro réel au départ</source>
@@ -1028,7 +1045,7 @@ The current network is replaced; imported stations and lines are free.</translat
     </message>
     <message>
         <source>Vous dirigez le futur métro de la ville. Sur la carte, le rouge montre les quartiers où des habitants et des emplois attendent un métro : à vous de les desservir.</source>
-        <translation>You run the city's future metro. On the map, red shows the neighbourhoods where residents and jobs are waiting for a metro: it's up to you to serve them.</translation>
+        <translation>You run the city&apos;s future metro. On the map, red shows the neighbourhoods where residents and jobs are waiting for a metro: it&apos;s up to you to serve them.</translation>
     </message>
     <message>
         <source>Construisez des stations</source>
@@ -1055,7 +1072,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Manage your budget</translation>
     </message>
     <message>
-        <source>Les voyageurs rapportent de l'argent chaque mois, les rames et les stations en coûtent. Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien.</source>
+        <source>Les voyageurs rapportent de l&apos;argent chaque mois, les rames et les stations en coûtent. Le panneau Finances (touche B) détaille tout : prix du ticket, emprunts, entretien.</source>
         <translation>Passengers bring in money every month; trains and stations cost money. The Finances panel (key B) details everything: ticket price, loans, maintenance.</translation>
     </message>
     <message>
@@ -1115,7 +1132,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Operating / month</translation>
     </message>
     <message>
-        <source>Résultat d'exploitation / mois</source>
+        <source>Résultat d&apos;exploitation / mois</source>
         <translation>Operating result / month</translation>
     </message>
     <message>
@@ -1123,7 +1140,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Invested since the start</translation>
     </message>
     <message>
-        <source>Chiffre d'affaires cumulé</source>
+        <source>Chiffre d&apos;affaires cumulé</source>
         <translation>Cumulative turnover</translation>
     </message>
     <message>
@@ -1203,7 +1220,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>M€ per month · last month in progress</translation>
     </message>
     <message>
-        <source>Résultat d'exploitation</source>
+        <source>Résultat d&apos;exploitation</source>
         <translation>Operating result</translation>
     </message>
     <message>
@@ -1284,7 +1301,7 @@ The current network is replaced; imported stations and lines are free.</translat
     </message>
     <message>
         <source>Pannes possibles après 5 ans de service ; renouvelez le matériel dans la fiche de chaque ligne.</source>
-        <translation>Breakdowns possible after 5 years of service; renew the rolling stock in each line's panel.</translation>
+        <translation>Breakdowns possible after 5 years of service; renew the rolling stock in each line&apos;s panel.</translation>
     </message>
     <message>
         <source>Matériel ménagé : il vieillit moins vite et tombe rarement en panne.</source>
@@ -1295,7 +1312,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Debt %1 out of %2 M€ allowed · %3 per month</translation>
     </message>
     <message>
-        <source>Aucune dette · jusqu'à %1 M€ empruntables</source>
+        <source>Aucune dette · jusqu&apos;à %1 M€ empruntables</source>
         <translation>No debt · up to %1 M€ can be borrowed</translation>
     </message>
     <message>
@@ -1463,7 +1480,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>the north</translation>
     </message>
     <message>
-        <source>l'est</source>
+        <source>l&apos;est</source>
         <translation>the east</translation>
     </message>
     <message>
@@ -1471,7 +1488,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>the south</translation>
     </message>
     <message>
-        <source>l'ouest</source>
+        <source>l&apos;ouest</source>
         <translation>the west</translation>
     </message>
     <message>
@@ -1515,8 +1532,8 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>&lt;b&gt;%1&lt;/b&gt;&lt;br&gt;%2 stops · %3 passengers/h%4</translation>
     </message>
     <message>
-        <source>&lt;br&gt;&lt;span style='color:#FF8A96'&gt;Saturée&lt;/span&gt;</source>
-        <translation>&lt;br&gt;&lt;span style='color:#FF8A96'&gt;Saturated&lt;/span&gt;</translation>
+        <source>&lt;br&gt;&lt;span style=&apos;color:#FF8A96&apos;&gt;Saturée&lt;/span&gt;</source>
+        <translation>&lt;br&gt;&lt;span style=&apos;color:#FF8A96&apos;&gt;Saturated&lt;/span&gt;</translation>
     </message>
     <message>
         <source>Ajoutez au moins une autre station pour mettre la ligne en service.</source>
@@ -1595,7 +1612,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>LETTERS</translation>
     </message>
     <message>
-        <source>Chargez d'abord une ville par son nom</source>
+        <source>Chargez d&apos;abord une ville par son nom</source>
         <translation>Load a city by name first</translation>
     </message>
     <message>
@@ -1619,7 +1636,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Load a game</translation>
     </message>
     <message>
-        <source>Impossible d'ouvrir %1</source>
+        <source>Impossible d&apos;ouvrir %1</source>
         <translation>Cannot open %1</translation>
     </message>
     <message>
@@ -1687,8 +1704,8 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Help</translation>
     </message>
     <message>
-        <source>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Sélection · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Tracer · &lt;b&gt;4&lt;/b&gt; Démolir · &lt;b&gt;5&lt;/b&gt; Itinéraire&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; annuler / rétablir (la construction annulée est remboursée) · &lt;b&gt;Ctrl+E&lt;/b&gt; exporter le plan&lt;br&gt;&lt;b&gt;N&lt;/b&gt; nouvelle ligne numérotée · &lt;b&gt;Maj+N&lt;/b&gt; ligne lettre · &lt;b&gt;Espace&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recadrer · &lt;b&gt;M&lt;/b&gt; plan schématique · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectifs · &lt;b&gt;Échap&lt;/b&gt; fermer&lt;br&gt;&lt;b&gt;Suppr&lt;/b&gt; démolir la station sélectionnée · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; partie&lt;/p&gt;&lt;p&gt;En mode tracé : clic = ajouter en bout de ligne, Ctrl+clic = en tête, clic droit = retirer l'arrêt. Réordonnez les arrêts par glisser-déposer dans le panneau de la ligne.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Points de passage&lt;/b&gt; : glissez un tracé (outil Sélection ou Tracer) pour le courber, glissez une poignée blanche pour la déplacer, clic droit dessus pour la supprimer. Le tunnel supplémentaire est facturé au kilomètre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Événements&lt;/b&gt; : grèves, pannes, inondations, subventions, nouveaux quartiers… Ceux qui demandent une décision mettent le jeu en pause.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score et objectifs&lt;/b&gt; : chaque mois rapporte des points (voyageurs, demande captée, rentabilité) ; chaque objectif atteint donne des points et une prime, puis laisse place à un plus difficile. Le meilleur score de chaque ville est conservé.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Itinéraire&lt;/b&gt; (5) : cliquez un départ puis une arrivée pour voir le meilleur trajet (marche, attente, métro, correspondances) et le comparer à la marche.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Bac à sable&lt;/b&gt; : choisissez-le sur l'écran d'accueil (ou ☰ pour la partie en cours) : construction gratuite, sans événements ni score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Gestion&lt;/b&gt; (Finances, B) : prix du ticket, niveau d'entretien, emprunts ; la ville subventionne un métro qui capte bien la demande. Dans chaque ligne : rames aux heures creuses, âge du matériel et renouvellement. Les quartiers bien desservis se densifient au fil des ans.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Défis&lt;/b&gt; : scénarios sur six grandes villes (accueil ou ☰), import du métro réel (☰), et succès à débloquer.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Ambiance&lt;/b&gt; : la journée défile (1 s = 1 min à ×1) ; la nuit la carte s'assombrit, le métro ferme de 1 h à 5 h et circule moins aux heures creuses. Dans la fiche d'une ligne, « Vue en coupe » montre tunnels, viaducs et passages sous les fleuves ; cliquez un tronçon pour basculer tunnel / viaduc.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Agrandir la carte&lt;/b&gt; : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.&lt;/p&gt;&lt;p&gt;Calque &lt;b&gt;demande&lt;/b&gt; : rouge = déplacements non desservis, vert = captés par le métro.&lt;/p&gt;&lt;p style='color:#9AA0A6'&gt;Données © contributeurs OpenStreetMap (ODbL) · tuiles © OpenMapTiles, servies par OpenFreeMap.&lt;/p&gt;</source>
-        <translation>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Select · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Lay out · &lt;b&gt;4&lt;/b&gt; Demolish · &lt;b&gt;5&lt;/b&gt; Route&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; undo / redo (undone construction is refunded) · &lt;b&gt;Ctrl+E&lt;/b&gt; export the map&lt;br&gt;&lt;b&gt;N&lt;/b&gt; new numbered line · &lt;b&gt;Shift+N&lt;/b&gt; lettered line · &lt;b&gt;Space&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recenter · &lt;b&gt;M&lt;/b&gt; schematic map · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectives · &lt;b&gt;Esc&lt;/b&gt; close&lt;br&gt;&lt;b&gt;Del&lt;/b&gt; demolish the selected station · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; game&lt;/p&gt;&lt;p&gt;In lay-out mode: click = add at the end of the line, Ctrl+click = at the start, right click = remove the stop. Reorder stops by drag and drop in the line panel.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Waypoints&lt;/b&gt;: drag a track (Select or Lay out tool) to curve it, drag a white handle to move it, right-click it to delete it. The extra tunnel is charged per kilometre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Events&lt;/b&gt;: strikes, breakdowns, floods, subsidies, new neighbourhoods… Those that need a decision pause the game.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score and objectives&lt;/b&gt;: every month earns points (passengers, captured demand, profitability); each objective reached gives points and a bonus, then makes way for a harder one. Each city's best score is kept.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Route&lt;/b&gt; (5): click a start then a destination to see the best trip (walking, waiting, metro, transfers) compared with walking.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Sandbox&lt;/b&gt;: choose it on the home screen (or ☰ for the current game): free construction, no events or score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Management&lt;/b&gt; (Finances, B): ticket price, maintenance level, loans; the city subsidises a metro that captures demand well. In each line: off-peak trains, rolling stock age and renewal. Well-served neighbourhoods grow denser over the years.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Challenges&lt;/b&gt;: scenarios in six great cities (home screen or ☰), real metro import (☰), and achievements to unlock.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Atmosphere&lt;/b&gt;: the day goes by (1 s = 1 min at ×1); at night the map darkens, the metro closes from 1 am to 5 am and runs less off-peak. In a line's panel, « Cross-section » shows tunnels, viaducts and river crossings; click a section to switch tunnel / viaduct.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Enlarge the map&lt;/b&gt;: « 1 km » buttons on the edges of the play area, or the ☰ menu.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Demand&lt;/b&gt; layer: red = unserved trips, green = captured by the metro.&lt;/p&gt;&lt;p style='color:#9AA0A6'&gt;Data © OpenStreetMap contributors (ODbL) · tiles © OpenMapTiles, served by OpenFreeMap.&lt;/p&gt;</translation>
+        <source>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Sélection · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Tracer · &lt;b&gt;4&lt;/b&gt; Démolir · &lt;b&gt;5&lt;/b&gt; Itinéraire&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; annuler / rétablir (la construction annulée est remboursée) · &lt;b&gt;Ctrl+E&lt;/b&gt; exporter le plan&lt;br&gt;&lt;b&gt;N&lt;/b&gt; nouvelle ligne numérotée · &lt;b&gt;Maj+N&lt;/b&gt; ligne lettre · &lt;b&gt;Espace&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recadrer · &lt;b&gt;M&lt;/b&gt; plan schématique · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectifs · &lt;b&gt;Échap&lt;/b&gt; fermer&lt;br&gt;&lt;b&gt;Suppr&lt;/b&gt; démolir la station sélectionnée · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; partie&lt;/p&gt;&lt;p&gt;En mode tracé : clic = ajouter en bout de ligne, Ctrl+clic = en tête, clic droit = retirer l&apos;arrêt. Réordonnez les arrêts par glisser-déposer dans le panneau de la ligne.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Points de passage&lt;/b&gt; : glissez un tracé (outil Sélection ou Tracer) pour le courber, glissez une poignée blanche pour la déplacer, clic droit dessus pour la supprimer. Le tunnel supplémentaire est facturé au kilomètre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Événements&lt;/b&gt; : grèves, pannes, inondations, subventions, nouveaux quartiers… Ceux qui demandent une décision mettent le jeu en pause.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score et objectifs&lt;/b&gt; : chaque mois rapporte des points (voyageurs, demande captée, rentabilité) ; chaque objectif atteint donne des points et une prime, puis laisse place à un plus difficile. Le meilleur score de chaque ville est conservé.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Itinéraire&lt;/b&gt; (5) : cliquez un départ puis une arrivée pour voir le meilleur trajet (marche, attente, métro, correspondances) et le comparer à la marche.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Bac à sable&lt;/b&gt; : choisissez-le sur l&apos;écran d&apos;accueil (ou ☰ pour la partie en cours) : construction gratuite, sans événements ni score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Gestion&lt;/b&gt; (Finances, B) : prix du ticket, niveau d&apos;entretien, emprunts ; la ville subventionne un métro qui capte bien la demande. Dans chaque ligne : rames aux heures creuses, âge du matériel et renouvellement. Les quartiers bien desservis se densifient au fil des ans.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Défis&lt;/b&gt; : scénarios sur six grandes villes (accueil ou ☰), import du métro réel (☰), et succès à débloquer.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Ambiance&lt;/b&gt; : la journée défile (1 s = 1 min à ×1) ; la nuit la carte s&apos;assombrit, le métro ferme de 1 h à 5 h et circule moins aux heures creuses. Dans la fiche d&apos;une ligne, « Vue en coupe » montre tunnels, viaducs et passages sous les fleuves ; cliquez un tronçon pour basculer tunnel / viaduc.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Agrandir la carte&lt;/b&gt; : boutons « 1 km » sur les bords de la zone de jeu, ou menu ☰.&lt;/p&gt;&lt;p&gt;Calque &lt;b&gt;demande&lt;/b&gt; : rouge = déplacements non desservis, vert = captés par le métro.&lt;/p&gt;&lt;p style=&apos;color:#9AA0A6&apos;&gt;Données © contributeurs OpenStreetMap (ODbL) · tuiles © OpenMapTiles, servies par OpenFreeMap.&lt;/p&gt;</source>
+        <translation>&lt;h3&gt;Metro Builder&lt;/h3&gt;&lt;p&gt;&lt;b&gt;1&lt;/b&gt; Select · &lt;b&gt;2&lt;/b&gt; Station · &lt;b&gt;3&lt;/b&gt; Lay out · &lt;b&gt;4&lt;/b&gt; Demolish · &lt;b&gt;5&lt;/b&gt; Route&lt;br&gt;&lt;b&gt;Ctrl+Z / Ctrl+Y&lt;/b&gt; undo / redo (undone construction is refunded) · &lt;b&gt;Ctrl+E&lt;/b&gt; export the map&lt;br&gt;&lt;b&gt;N&lt;/b&gt; new numbered line · &lt;b&gt;Shift+N&lt;/b&gt; lettered line · &lt;b&gt;Space&lt;/b&gt; pause · &lt;b&gt;F&lt;/b&gt; recenter · &lt;b&gt;M&lt;/b&gt; schematic map · &lt;b&gt;B&lt;/b&gt; finances · &lt;b&gt;O&lt;/b&gt; objectives · &lt;b&gt;Esc&lt;/b&gt; close&lt;br&gt;&lt;b&gt;Del&lt;/b&gt; demolish the selected station · &lt;b&gt;Ctrl+S / Ctrl+O&lt;/b&gt; game&lt;/p&gt;&lt;p&gt;In lay-out mode: click = add at the end of the line, Ctrl+click = at the start, right click = remove the stop. Reorder stops by drag and drop in the line panel.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Waypoints&lt;/b&gt;: drag a track (Select or Lay out tool) to curve it, drag a white handle to move it, right-click it to delete it. The extra tunnel is charged per kilometre.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Events&lt;/b&gt;: strikes, breakdowns, floods, subsidies, new neighbourhoods… Those that need a decision pause the game.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Score and objectives&lt;/b&gt;: every month earns points (passengers, captured demand, profitability); each objective reached gives points and a bonus, then makes way for a harder one. Each city&apos;s best score is kept.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Route&lt;/b&gt; (5): click a start then a destination to see the best trip (walking, waiting, metro, transfers) compared with walking.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Sandbox&lt;/b&gt;: choose it on the home screen (or ☰ for the current game): free construction, no events or score.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Management&lt;/b&gt; (Finances, B): ticket price, maintenance level, loans; the city subsidises a metro that captures demand well. In each line: off-peak trains, rolling stock age and renewal. Well-served neighbourhoods grow denser over the years.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Challenges&lt;/b&gt;: scenarios in six great cities (home screen or ☰), real metro import (☰), and achievements to unlock.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Atmosphere&lt;/b&gt;: the day goes by (1 s = 1 min at ×1); at night the map darkens, the metro closes from 1 am to 5 am and runs less off-peak. In a line&apos;s panel, « Cross-section » shows tunnels, viaducts and river crossings; click a section to switch tunnel / viaduct.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Enlarge the map&lt;/b&gt;: « 1 km » buttons on the edges of the play area, or the ☰ menu.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Demand&lt;/b&gt; layer: red = unserved trips, green = captured by the metro.&lt;/p&gt;&lt;p style=&apos;color:#9AA0A6&apos;&gt;Data © OpenStreetMap contributors (ODbL) · tiles © OpenMapTiles, served by OpenFreeMap.&lt;/p&gt;</translation>
     </message>
     <message>
         <source>Performances</source>
@@ -1751,7 +1768,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Open the tools (bottom left) and choose Station, or press 2. Then click three times on the map, in red areas, about 500 m apart. Each station serves the streets within a 5-minute walk.</translation>
     </message>
     <message>
-        <source>Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l'outil Tracer s'active. Cliquez ensuite vos stations dans l'ordre du parcours. Le tunnel est facturé au kilomètre.</source>
+        <source>Ouvrez le bouton Lignes, à côté des outils, et créez une ligne : l&apos;outil Tracer s&apos;active. Cliquez ensuite vos stations dans l&apos;ordre du parcours. Le tunnel est facturé au kilomètre.</source>
         <translation>Open the Lines button, next to the tools, and create a line: the Lay out tool turns on. Then click your stations in route order. Tunnels are charged per kilometre.</translation>
     </message>
     <message>
@@ -1871,7 +1888,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>You need a line</translation>
     </message>
     <message>
-        <source>Cette leçon s'appuie sur une ligne en service. Construisez deux stations (outil Station, touche 2), créez une ligne avec le bouton Lignes puis cliquez les stations.</source>
+        <source>Cette leçon s&apos;appuie sur une ligne en service. Construisez deux stations (outil Station, touche 2), créez une ligne avec le bouton Lignes puis cliquez les stations.</source>
         <translation>This lesson relies on a line in service. Build two stations (Station tool, key 2), create a line with the Lines button, then click the stations.</translation>
     </message>
     <message>
@@ -1879,11 +1896,11 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Select a line</translation>
     </message>
     <message>
-        <source>Ouvrez le bouton Lignes (en bas à gauche) et choisissez une ligne, ou cliquez sur son tracé : sa fiche s'ouvre à gauche.</source>
+        <source>Ouvrez le bouton Lignes (en bas à gauche) et choisissez une ligne, ou cliquez sur son tracé : sa fiche s&apos;ouvre à gauche.</source>
         <translation>Open the Lines button (bottom left) and choose a line, or click its track: its panel opens on the left.</translation>
     </message>
     <message>
-        <source>Vous connaissez l'essentiel. D'autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !</source>
+        <source>Vous connaissez l&apos;essentiel. D&apos;autres leçons courtes (tracés, exploitation, finances, viaducs…) vous attendent dans ☰ → Aide → Tutoriels, quand vous voulez. Bonne construction !</source>
         <translation>You know the essentials. More short lessons (tracks, operation, finances, viaducts…) are waiting in ☰ → Help → Tutorials, whenever you like. Happy building!</translation>
     </message>
     <message>
@@ -1891,7 +1908,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Curve a track</translation>
     </message>
     <message>
-        <source>Avec l'outil Sélection (1), saisissez le milieu d'un tracé et glissez-le : un point de passage apparaît et la ligne se courbe pour éviter un quartier ou suivre une avenue.</source>
+        <source>Avec l&apos;outil Sélection (1), saisissez le milieu d&apos;un tracé et glissez-le : un point de passage apparaît et la ligne se courbe pour éviter un quartier ou suivre une avenue.</source>
         <translation>With the Select tool (1), grab the middle of a track and drag it: a waypoint appears and the line curves to avoid a neighbourhood or follow an avenue.</translation>
     </message>
     <message>
@@ -1915,11 +1932,11 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Extend or shorten</translation>
     </message>
     <message>
-        <source>Avec l'outil Tracer (3), un clic ajoute une station en bout de ligne, Ctrl+clic en tête, un clic droit retire l'arrêt.</source>
+        <source>Avec l&apos;outil Tracer (3), un clic ajoute une station en bout de ligne, Ctrl+clic en tête, un clic droit retire l&apos;arrêt.</source>
         <translation>With the Lay out tool (3), a click adds a station at the end of the line, Ctrl+click at the start, a right click removes the stop.</translation>
     </message>
     <message>
-        <source>L'outil Démolir (4) supprime une station ou un point de passage : la moitié du coût est remboursée. Ctrl+Z annule n'importe quelle modification et rembourse tout.</source>
+        <source>L&apos;outil Démolir (4) supprime une station ou un point de passage : la moitié du coût est remboursée. Ctrl+Z annule n&apos;importe quelle modification et rembourse tout.</source>
         <translation>The Demolish tool (4) removes a station or a waypoint: half the cost is refunded. Ctrl+Z undoes any change and refunds everything.</translation>
     </message>
     <message>
@@ -1939,7 +1956,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Choose the « line load » layer (layers button, bottom right): the thicker and redder a section, the fuller it is. A saturated line loses passengers.</translation>
     </message>
     <message>
-        <source>En dehors des heures de pointe, vous pouvez ne garder que 75 % ou 50 % des rames : l'exploitation coûte moins cher, au prix d'un peu moins de voyageurs.</source>
+        <source>En dehors des heures de pointe, vous pouvez ne garder que 75 % ou 50 % des rames : l&apos;exploitation coûte moins cher, au prix d&apos;un peu moins de voyageurs.</source>
         <translation>Outside rush hours you can keep only 75% or 50% of the trains: operation costs less, at the price of slightly fewer passengers.</translation>
     </message>
     <message>
@@ -1947,7 +1964,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Ageing rolling stock</translation>
     </message>
     <message>
-        <source>Après 5 ans, des rames tombent en panne. La fiche indique l'âge et le risque ; « Renouveler » remplace tout le matériel pour 60 % du prix neuf.</source>
+        <source>Après 5 ans, des rames tombent en panne. La fiche indique l&apos;âge et le risque ; « Renouveler » remplace tout le matériel pour 60 % du prix neuf.</source>
         <translation>After 5 years, trains break down. The panel shows the age and the risk; « Renew » replaces all the rolling stock for 60% of the new price.</translation>
     </message>
     <message>
@@ -1967,7 +1984,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Subsidy and loans</translation>
     </message>
     <message>
-        <source>La ville subventionne jusqu'à 40 % de l'exploitation si votre métro capte bien la demande. Les emprunts (4 %/an sur 10 ans) financent un gros chantier ; on peut les rembourser d'un coup.</source>
+        <source>La ville subventionne jusqu&apos;à 40 % de l&apos;exploitation si votre métro capte bien la demande. Les emprunts (4 %/an sur 10 ans) financent un gros chantier ; on peut les rembourser d&apos;un coup.</source>
         <translation>The city subsidises up to 40% of operating costs if your metro captures demand well. Loans (4%/year over 10 years) fund a big project; they can be repaid in one go.</translation>
     </message>
     <message>
@@ -1983,8 +2000,8 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Charts</translation>
     </message>
     <message>
-        <source>Trésorerie, recettes, résultat, fréquentation, population, score… choisissez la période en haut du panneau, et survolez une courbe pour lire les valeurs d'un mois.</source>
-        <translation>Cash, revenue, result, ridership, population, score… choose the period at the top of the panel, and hover a curve to read a month's values.</translation>
+        <source>Trésorerie, recettes, résultat, fréquentation, population, score… choisissez la période en haut du panneau, et survolez une courbe pour lire les valeurs d&apos;un mois.</source>
+        <translation>Cash, revenue, result, ridership, population, score… choose the period at the top of the panel, and hover a curve to read a month&apos;s values.</translation>
     </message>
     <message>
         <source>Créez une correspondance</source>
@@ -1999,7 +2016,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Compute a route</translation>
     </message>
     <message>
-        <source>Choisissez l'outil Itinéraire (5), puis cliquez un point de départ et un point d'arrivée n'importe où sur la carte.</source>
+        <source>Choisissez l&apos;outil Itinéraire (5), puis cliquez un point de départ et un point d&apos;arrivée n&apos;importe où sur la carte.</source>
         <translation>Choose the Route tool (5), then click a start point and a destination anywhere on the map.</translation>
     </message>
     <message>
@@ -2007,7 +2024,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Read the trip</translation>
     </message>
     <message>
-        <source>La fiche indique la marche, l'attente, chaque ligne avec sa direction et les correspondances, et compare au temps à pied. Le trajet se recalcule quand vous modifiez le réseau.</source>
+        <source>La fiche indique la marche, l&apos;attente, chaque ligne avec sa direction et les correspondances, et compare au temps à pied. Le trajet se recalcule quand vous modifiez le réseau.</source>
         <translation>The panel shows walking, waiting, each line with its direction and the transfers, and compares with walking. The route is recomputed when you change the network.</translation>
     </message>
     <message>
@@ -2023,7 +2040,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Switch a section to viaduct</translation>
     </message>
     <message>
-        <source>Survolez un tronçon pour voir son coût, puis cliquez-le : il passe en viaduc, environ 45 % moins cher qu'un tunnel.</source>
+        <source>Survolez un tronçon pour voir son coût, puis cliquez-le : il passe en viaduc, environ 45 % moins cher qu&apos;un tunnel.</source>
         <translation>Hover a section to see its cost, then click it: it becomes a viaduct, about 45% cheaper than a tunnel.</translation>
     </message>
     <message>
@@ -2031,7 +2048,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>The downside of viaducts</translation>
     </message>
     <message>
-        <source>Un viaduc est bruyant : les quartiers qu'il traverse se densifient bien moins vite. Sous un fleuve, le tunnel descend plus bas et coûte 60 % de plus ; un pont reste un peu moins cher. Recliquez un tronçon pour le remettre en tunnel.</source>
+        <source>Un viaduc est bruyant : les quartiers qu&apos;il traverse se densifient bien moins vite. Sous un fleuve, le tunnel descend plus bas et coûte 60 % de plus ; un pont reste un peu moins cher. Recliquez un tronçon pour le remettre en tunnel.</source>
         <translation>A viaduct is noisy: the neighbourhoods it crosses grow much more slowly. Under a river the tunnel goes deeper and costs 60% more; a bridge stays slightly cheaper. Click a section again to put it back in a tunnel.</translation>
     </message>
     <message>
@@ -2039,7 +2056,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Layers</translation>
     </message>
     <message>
-        <source>Bouton des calques (en bas à droite) : demande captée, densité d'habitants, d'emplois, charge des lignes. Affichez la densité d'habitants pour continuer.</source>
+        <source>Bouton des calques (en bas à droite) : demande captée, densité d&apos;habitants, d&apos;emplois, charge des lignes. Affichez la densité d&apos;habitants pour continuer.</source>
         <translation>Layers button (bottom right): captured demand, resident density, job density, line load. Show resident density to continue.</translation>
     </message>
     <message>
@@ -2063,7 +2080,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Atmosphere</translation>
     </message>
     <message>
-        <source>Bouton Affichage → lune pour la carte sombre. La journée défile : la nuit, la carte s'assombrit et le métro ferme de 1 h à 5 h (désactivable dans ☰ → Carte).</source>
+        <source>Bouton Affichage → lune pour la carte sombre. La journée défile : la nuit, la carte s&apos;assombrit et le métro ferme de 1 h à 5 h (désactivable dans ☰ → Carte).</source>
         <translation>Display button → moon for the dark map. The day goes by: at night the map darkens and the metro closes from 1 am to 5 am (can be turned off in ☰ → Map).</translation>
     </message>
     <message>
@@ -2088,14 +2105,14 @@ The current network is replaced; imported stations and lines are free.</translat
     </message>
     <message>
         <source>Le panneau trophée liste trois objectifs : chacun rapporte des points et une prime, puis laisse place à un plus difficile. Le meilleur score de chaque ville est gardé.</source>
-        <translation>The trophy panel lists three objectives: each earns points and a bonus, then makes way for a harder one. Each city's best score is kept.</translation>
+        <translation>The trophy panel lists three objectives: each earns points and a bonus, then makes way for a harder one. Each city&apos;s best score is kept.</translation>
     </message>
     <message>
         <source>Événements</source>
         <translation>Events</translation>
     </message>
     <message>
-        <source>Grèves, pannes, matchs, subventions, nouveaux quartiers… apparaissent à gauche. Ceux qui demandent une décision mettent le jeu en pause jusqu'à votre choix.</source>
+        <source>Grèves, pannes, matchs, subventions, nouveaux quartiers… apparaissent à gauche. Ceux qui demandent une décision mettent le jeu en pause jusqu&apos;à votre choix.</source>
         <translation>Strikes, breakdowns, matches, subsidies, new neighbourhoods… appear on the left. Those that need a decision pause the game until you choose.</translation>
     </message>
     <message>
@@ -2107,7 +2124,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>The game is saved automatically (adjustable in ☰ → Game). Ctrl+S saves wherever you like, and double-clicking a .metro file reopens the game.</translation>
     </message>
     <message>
-        <source>☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et jusqu'à trois étoiles.</source>
+        <source>☰ → Défis → Scénarios : six missions sur de grandes villes, avec un budget, une échéance et jusqu&apos;à trois étoiles.</source>
         <translation>☰ → Challenges → Scenarios: six missions in great cities, with a budget, a deadline and up to three stars.</translation>
     </message>
     <message>
@@ -2116,14 +2133,14 @@ The current network is replaced; imported stations and lines are free.</translat
     </message>
     <message>
         <source>☰ → Défis → Importer le métro réel : les lignes existantes de la ville, pour partir de la réalité et la prolonger.</source>
-        <translation>☰ → Challenges → Import the real metro: the city's existing lines, to start from reality and extend it.</translation>
+        <translation>☰ → Challenges → Import the real metro: the city&apos;s existing lines, to start from reality and extend it.</translation>
     </message>
     <message>
         <source>Bac à sable et succès</source>
         <translation>Sandbox and achievements</translation>
     </message>
     <message>
-        <source>Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent au fil de vos parties et sont gardés d'une partie à l'autre.</source>
+        <source>Le bac à sable rend la construction gratuite, sans score. Les succès (☰ → Défis) se débloquent au fil de vos parties et sont gardés d&apos;une partie à l&apos;autre.</source>
         <translation>Sandbox makes construction free, with no score. Achievements (☰ → Challenges) unlock as you play and are kept from one game to the next.</translation>
     </message>
     <message>
@@ -2149,6 +2166,110 @@ The current network is replaced; imported stations and lines are free.</translat
     <message>
         <source>Quitter la leçon</source>
         <translation>Leave the lesson</translation>
+    </message>
+    <message>
+        <source>Tenir :</source>
+        <translation>Last:</translation>
+    </message>
+    <message>
+        <source>10 ans</source>
+        <translation>10 years</translation>
+    </message>
+    <message>
+        <source>20 ans</source>
+        <translation>20 years</translation>
+    </message>
+    <message>
+        <source>Sans fin</source>
+        <translation>Endless</translation>
+    </message>
+    <message>
+        <source>Gagnez en tenant %1 ans sans faire faillite (6 mois d&apos;affilée dans le rouge)</source>
+        <translation>Win by lasting %1 years without going bankrupt (6 months in a row in the red)</translation>
+    </message>
+    <message>
+        <source>Partie libre : pas de victoire, seule la faillite peut l&apos;arrêter</source>
+        <translation>Free game: no victory, only bankruptcy can end it</translation>
+    </message>
+    <message>
+        <source>Colère de la ville</source>
+        <translation>City's anger</translation>
+    </message>
+    <message>
+        <source>La ville exige une part croissante de la demande captée (dès la 2e année) : 6 mois d&apos;affilée en dessous et la mairie reprend le réseau</source>
+        <translation>The city demands a growing share of captured demand (from year 2): 6 months in a row below it and city hall takes the network back</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Victoire&lt;/b&gt; %1 · partie libre désormais</source>
+        <translation>&lt;b&gt;Victory&lt;/b&gt; %1 · free play from now on</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Partie perdue&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Game lost&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Tenir %1 ans&lt;/b&gt; · encore %2 an(s) et %3 mois</source>
+        <translation>&lt;b&gt;Last %1 years&lt;/b&gt; · %2 year(s) and %3 months to go</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Partie sans fin&lt;/b&gt; · évitez la faillite</source>
+        <translation>&lt;b&gt;Endless game&lt;/b&gt; · avoid bankruptcy</translation>
+    </message>
+    <message>
+        <source>Dans le rouge : %1/%2 mois avant la faillite</source>
+        <translation>In the red: %1/%2 months before bankruptcy</translation>
+    </message>
+    <message>
+        <source>Trésorerie saine</source>
+        <translation>Healthy finances</translation>
+    </message>
+    <message>
+        <source>Satisfaction %1 % · %2 % exigés</source>
+        <translation>Satisfaction %1% · %2% required</translation>
+    </message>
+    <message>
+        <source>La ville patiente : aucune exigence la 1re année</source>
+        <translation>The city is patient: no requirement in year 1</translation>
+    </message>
+    <message>
+        <source> · mécontente %1/%2 mois</source>
+        <translation> · unhappy %1/%2 months</translation>
+    </message>
+    <message>
+        <source>Score %1 · %2 stations · %3 voyageurs/h · %4 % de la demande captée</source>
+        <translation>Score %1 · %2 stations · %3 passengers/h · %4% of demand captured</translation>
+    </message>
+    <message>
+        <source>Victoire : %1 ans tenus !</source>
+        <translation>Victory: %1 years survived!</translation>
+    </message>
+    <message>
+        <source>Le réseau a traversé %1 ans sans faillite. Les étoiles récompensent la part de la demande captée (2 ★ dès 30 %, 3 ★ dès 50 %).&lt;br&gt;&lt;br&gt;%2&lt;br&gt;&lt;br&gt;Vous pouvez continuer à développer le réseau librement.</source>
+        <translation>The network lasted %1 years without bankruptcy. Stars reward the share of demand captured (2 ★ from 30%, 3 ★ from 50%).&lt;br&gt;&lt;br&gt;%2&lt;br&gt;&lt;br&gt;You can keep developing the network freely.</translation>
+    </message>
+    <message>
+        <source>Faillite</source>
+        <translation>Bankruptcy</translation>
+    </message>
+    <message>
+        <source>La mairie reprend le réseau</source>
+        <translation>City hall takes the network back</translation>
+    </message>
+    <message>
+        <source>Six mois d&apos;affilée dans le rouge : la banque coupe les crédits après %1 an(s) et %2 mois d&apos;exploitation.</source>
+        <translation>Six months in a row in the red: the bank cuts you off after %1 year(s) and %2 months of operation.</translation>
+    </message>
+    <message>
+        <source>Six mois d&apos;affilée sous la satisfaction exigée : la ville vous retire l&apos;exploitation après %1 an(s) et %2 mois.</source>
+        <translation>Six months in a row below the required satisfaction: the city takes operation away from you after %1 year(s) and %2 months.</translation>
+    </message>
+    <message>
+        <source>Continuer quand même</source>
+        <translation>Continue anyway</translation>
+    </message>
+    <message>
+        <source>Nouvelle partie</source>
+        <translation>New game</translation>
     </message>
 </context>
 <context>
@@ -2178,15 +2299,15 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Click a station or a waypoint to delete it (%1% refunded)</translation>
     </message>
     <message>
-        <source>Cliquez le point d'arrivée</source>
+        <source>Cliquez le point d&apos;arrivée</source>
         <translation>Click the destination</translation>
     </message>
     <message>
-        <source>Itinéraire : cliquez le point de départ puis l'arrivée · clic droit pour effacer</source>
+        <source>Itinéraire : cliquez le point de départ puis l&apos;arrivée · clic droit pour effacer</source>
         <translation>Route: click the start then the destination · right-click to clear</translation>
     </message>
     <message>
-        <source>Plan schématique · M pour revenir à la carte · cliquez une station pour l'inspecter</source>
+        <source>Plan schématique · M pour revenir à la carte · cliquez une station pour l&apos;inspecter</source>
         <translation>Schematic map · M to return to the map · click a station to inspect it</translation>
     </message>
     <message>
@@ -2250,7 +2371,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Network map</translation>
     </message>
     <message>
-        <source>L'itinéraire se choisit sur la carte (M pour y revenir)</source>
+        <source>L&apos;itinéraire se choisit sur la carte (M pour y revenir)</source>
         <translation>The route is chosen on the map (M to go back)</translation>
     </message>
     <message>
@@ -2281,7 +2402,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>%1: rolling stock renewed</translation>
     </message>
     <message>
-        <source>La banque refuse : l'encours ne peut dépasser %1 M€</source>
+        <source>La banque refuse : l&apos;encours ne peut dépasser %1 M€</source>
         <translation>The bank refuses: debt cannot exceed %1 M€</translation>
     </message>
     <message>
@@ -2313,7 +2434,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Wait</translation>
     </message>
     <message>
-        <source>Bilan de l'année %1 : la ville compte %2 habitants (+%3), surtout autour de vos stations</source>
+        <source>Bilan de l&apos;année %1 : la ville compte %2 habitants (+%3), surtout autour de vos stations</source>
         <translation>Year %1 review: the city has %2 residents (+%3), mostly around your stations</translation>
     </message>
     <message>
@@ -2325,7 +2446,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Strike on %1</translation>
     </message>
     <message>
-        <source>Les conducteurs de la %1 cessent le travail : la ligne est à l'arrêt pendant 2 mois. Négocier coûte %2 M€ et met fin à la grève tout de suite.</source>
+        <source>Les conducteurs de la %1 cessent le travail : la ligne est à l&apos;arrêt pendant 2 mois. Négocier coûte %2 M€ et met fin à la grève tout de suite.</source>
         <translation>The drivers of %1 walk out: the line is stopped for 2 months. Negotiating costs %2 M€ and ends the strike right away.</translation>
     </message>
     <message>
@@ -2385,19 +2506,19 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Pleased with the share of demand captured by the metro (%1%), the region pays %2 M€.</translation>
     </message>
     <message>
-        <source>Flambée des prix de l'énergie</source>
+        <source>Flambée des prix de l&apos;énergie</source>
         <translation>Energy price surge</translation>
     </message>
     <message>
-        <source>Les coûts d'exploitation augmentent de 20 % pendant 2 mois.</source>
+        <source>Les coûts d&apos;exploitation augmentent de 20 % pendant 2 mois.</source>
         <translation>Operating costs rise by 20% for 2 months.</translation>
     </message>
     <message>
         <source>Rabais des entreprises de travaux</source>
-        <translation>Contractors' discount</translation>
+        <translation>Contractors&apos; discount</translation>
     </message>
     <message>
-        <source>Les chantiers coûtent 20 % de moins pendant 2 mois : c'est le moment de construire !</source>
+        <source>Les chantiers coûtent 20 % de moins pendant 2 mois : c&apos;est le moment de construire !</source>
         <translation>Construction costs 20% less for 2 months: time to build!</translation>
     </message>
     <message>
@@ -2417,7 +2538,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>After heavy rain, %1 station is closed for a month.</translation>
     </message>
     <message>
-        <source>Pompage d'urgence (−%1 M€)</source>
+        <source>Pompage d&apos;urgence (−%1 M€)</source>
         <translation>Emergency pumping (−%1 M€)</translation>
     </message>
     <message>
@@ -2581,11 +2702,11 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>One profitable month</translation>
     </message>
     <message>
-        <source>%1 mois bénéficiaires d'affilée</source>
+        <source>%1 mois bénéficiaires d&apos;affilée</source>
         <translation>%1 profitable months in a row</translation>
     </message>
     <message>
-        <source>Chiffre d'affaires de %1</source>
+        <source>Chiffre d&apos;affaires de %1</source>
         <translation>Turnover of %1</translation>
     </message>
     <message>
@@ -2617,7 +2738,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Line %1</translation>
     </message>
     <message>
-        <source>le matériel roulant d'une nouvelle ligne</source>
+        <source>le matériel roulant d&apos;une nouvelle ligne</source>
         <translation>the rolling stock of a new line</translation>
     </message>
     <message>
@@ -2656,6 +2777,20 @@ The current network is replaced; imported stations and lines are free.</translat
         <source>Budget insuffisant pour creuser ce tunnel (%1 M€ requis)</source>
         <translation>Not enough budget to dig this tunnel (%1 M€ needed)</translation>
     </message>
+    <message numerus="yes">
+        <source>Trésorerie négative : faillite dans %n mois si rien ne change</source>
+        <translation>
+            <numerusform>Negative balance: bankruptcy in %n month if nothing changes</numerusform>
+            <numerusform>Negative balance: bankruptcy in %n months if nothing changes</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>La ville est mécontente (%1 % de la demande captée, %2 % exigés) : la mairie reprend le réseau dans %n mois</source>
+        <translation>
+            <numerusform>The city is unhappy (%1% of demand captured, %2% required): city hall takes the network back in %n month</numerusform>
+            <numerusform>The city is unhappy (%1% of demand captured, %2% required): city hall takes the network back in %n months</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>OsmLoader</name>
@@ -2664,7 +2799,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Loading from cache…</translation>
     </message>
     <message>
-        <source>Impossible d'ouvrir %1</source>
+        <source>Impossible d&apos;ouvrir %1</source>
         <translation>Cannot open %1</translation>
     </message>
     <message>
@@ -2728,7 +2863,7 @@ The current network is replaced; imported stations and lines are free.</translat
     <name>ProfileWidget</name>
     <message>
         <source>Ajoutez au moins deux arrêts pour voir la coupe de la ligne</source>
-        <translation>Add at least two stops to see the line's cross-section</translation>
+        <translation>Add at least two stops to see the line&apos;s cross-section</translation>
     </message>
     <message>
         <source>sol</source>
@@ -2739,11 +2874,11 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>−30 m</translation>
     </message>
     <message>
-        <source>&lt;br&gt;Franchit un cours d'eau sur un pont</source>
+        <source>&lt;br&gt;Franchit un cours d&apos;eau sur un pont</source>
         <translation>&lt;br&gt;Crosses a river on a bridge</translation>
     </message>
     <message>
-        <source>&lt;br&gt;Passe sous un cours d'eau (tunnel profond)</source>
+        <source>&lt;br&gt;Passe sous un cours d&apos;eau (tunnel profond)</source>
         <translation>&lt;br&gt;Runs under a river (deep tunnel)</translation>
     </message>
     <message>
@@ -2778,11 +2913,11 @@ The current network is replaced; imported stations and lines are free.</translat
 <context>
     <name>QObject</name>
     <message>
-        <source>Densité d'habitants</source>
+        <source>Densité d&apos;habitants</source>
         <translation>Resident density</translation>
     </message>
     <message>
-        <source>Densité d'emplois</source>
+        <source>Densité d&apos;emplois</source>
         <translation>Job density</translation>
     </message>
     <message>
@@ -2798,7 +2933,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>jobs/ha</translation>
     </message>
     <message>
-        <source>moins d'un an</source>
+        <source>moins d&apos;un an</source>
         <translation>less than a year</translation>
     </message>
     <message>
@@ -2850,7 +2985,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Paris, ever further</translation>
     </message>
     <message>
-        <source>Vous héritez du vrai métro parisien. Prolongez-le pour qu'il transporte bien plus de monde et n'oublie aucun habitant, sans jamais perdre d'argent.</source>
+        <source>Vous héritez du vrai métro parisien. Prolongez-le pour qu&apos;il transporte bien plus de monde et n&apos;oublie aucun habitant, sans jamais perdre d&apos;argent.</source>
         <translation>You inherit the real Paris metro. Extend it so that it carries far more people and leaves no resident behind, without ever losing money.</translation>
     </message>
     <message>
@@ -2862,7 +2997,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>London: decongest the City</translation>
     </message>
     <message>
-        <source>Partez de zéro au cœur de Londres : desservez les quartiers d'affaires et multipliez les correspondances.</source>
+        <source>Partez de zéro au cœur de Londres : desservez les quartiers d&apos;affaires et multipliez les correspondances.</source>
         <translation>Start from scratch in the heart of London: serve the business districts and multiply transfers.</translation>
     </message>
     <message>
@@ -2870,7 +3005,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Berlin</translation>
     </message>
     <message>
-        <source>Berlin, d'est en ouest</source>
+        <source>Berlin, d&apos;est en ouest</source>
         <translation>Berlin, east to west</translation>
     </message>
     <message>
@@ -2886,7 +3021,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Madrid, a profitable metro</translation>
     </message>
     <message>
-        <source>Budget serré : la ville veut un métro qui gagne de l'argent chaque mois pendant une année entière.</source>
+        <source>Budget serré : la ville veut un métro qui gagne de l&apos;argent chaque mois pendant une année entière.</source>
         <translation>Tight budget: the city wants a metro that makes money every month for a whole year.</translation>
     </message>
     <message>
@@ -2898,7 +3033,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Manhattan under pressure</translation>
     </message>
     <message>
-        <source>Des tours de bureaux à perte de vue : transportez des foules immenses sans qu'aucune ligne ne déborde.</source>
+        <source>Des tours de bureaux à perte de vue : transportez des foules immenses sans qu&apos;aucune ligne ne déborde.</source>
         <translation>Office towers as far as the eye can see: carry huge crowds without any line overflowing.</translation>
     </message>
     <message>
@@ -2906,7 +3041,7 @@ The current network is replaced; imported stations and lines are free.</translat
         <translation>Tokyo</translation>
     </message>
     <message>
-        <source>Tokyo, l'heure de pointe</source>
+        <source>Tokyo, l&apos;heure de pointe</source>
         <translation>Tokyo, rush hour</translation>
     </message>
     <message>
